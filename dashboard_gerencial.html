@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Gerencial — LINUM Roupas de Linho</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+
+#lock-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0}
+.lock-box{background:white;border-radius:16px;padding:40px 48px;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;width:340px}
+.lock-logo{font-size:2.2rem;margin-bottom:6px}
+.lock-title{font-size:1.1rem;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.lock-sub{font-size:.82rem;color:#888;margin-bottom:28px}
+.lock-label{font-size:.78rem;font-weight:600;color:#555;text-align:left;display:block;margin-bottom:6px}
+.lock-input{width:100%;padding:12px 16px;border:2px solid #e0e0e0;border-radius:8px;font-size:1.2rem;letter-spacing:6px;text-align:center;outline:none;transition:border .2s}
+.lock-input:focus{border-color:#4f46e5}
+.lock-btn{margin-top:16px;width:100%;padding:12px;background:#4f46e5;color:white;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s}
+.lock-btn:hover{background:#3730a3}
+.lock-error{color:#ef4444;font-size:.82rem;margin-top:10px;min-height:18px}
+.lock-footer{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:20px}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;font-size:14px}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.3rem;font-weight:600}
+header span{font-size:.8rem;opacity:.7}
+.tabs{background:white;border-bottom:2px solid #e0e0e0;display:flex;padding:0 28px;gap:4px}
+.tab{padding:12px 20px;cursor:pointer;font-weight:600;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab.active{color:#4f46e5;border-color:#4f46e5}.tab:hover{color:#4f46e5}
+.filters{background:white;padding:12px 28px;display:flex;gap:10px;align-items:center;border-bottom:1px solid #eee;flex-wrap:wrap}
+.filters label{font-size:.8rem;font-weight:600;color:#555}
+.filters select,.filters input[type=text]{padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:.83rem;background:white}
+.filter-group{display:flex;align-items:center;gap:5px}
+.btn{padding:6px 14px;background:#4f46e5;color:white;border:none;border-radius:6px;font-size:.82rem;cursor:pointer;font-weight:600}
+.btn:hover{background:#3730a3}.btn.sec{background:#6b7280}.btn.sec:hover{background:#374151}
+.container{padding:18px 28px;max-width:1400px;margin:0 auto}
+.page{display:none}.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid #ddd}
+.kpi.r{border-color:#22c55e}.kpi.d{border-color:#ef4444}.kpi.l{border-color:#4f46e5}.kpi.i{border-color:#f59e0b}.kpi.a{border-color:#06b6d4}
+.kpi-label{font-size:.72rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-value{font-size:1.3rem;font-weight:700}
+.kpi-sub{font-size:.7rem;color:#aaa;margin-top:2px}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-title{font-size:.88rem;font-weight:700;color:#333;margin-bottom:12px;border-bottom:1px solid #f0f0f0;padding-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.hint{font-size:.72rem;color:#aaa;font-weight:400;font-style:italic}
+.chart-wrap{position:relative;width:100%;height:250px}
+.tbl-wrap{overflow:auto;border:1px solid #f0f0f0;border-radius:8px}
+.tbl-wrap.tall{max-height:580px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;padding:8px 10px;background:#f8f8f8;font-weight:600;color:#555;font-size:.73rem;text-transform:uppercase;position:sticky;top:0;z-index:1;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.tr{text-align:right}.tc{text-align:center}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.72rem;font-weight:600}
+.badge.rec{background:#dcfce7;color:#166534}.badge.desp{background:#fee2e2;color:#991b1b}
+.badge.cred{background:#dbeafe;color:#1e40af}.badge.deb2{background:#fef3c7;color:#92400e}
+.badge.it{background:#f3e8ff;color:#6b21a8}.badge.nu{background:#ecfdf5;color:#065f46}
+.cat-row{cursor:pointer}.cat-row:hover td{background:#ede9fe!important}
+.cat-link{color:#4f46e5;text-decoration:underline}
+.pill{display:inline-block;padding:1px 8px;border-radius:12px;font-size:.72rem;font-weight:600;background:#ede9fe;color:#5b21b6}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:white;border-radius:12px;width:92%;max-width:920px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal-hd{padding:14px 20px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.modal-hd h3{font-size:.95rem;font-weight:700}
+.modal-hd .sub{font-size:.8rem;color:#888;margin-top:2px}
+.modal-x{font-size:1.5rem;cursor:pointer;color:#aaa;border:none;background:none;line-height:1}
+.modal-x:hover{color:#333}
+.modal-bd{overflow-y:auto;padding:16px}
+.modal-foot{padding:10px 20px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-size:.83rem;color:#555}
+.pos{color:#22c55e;font-weight:700}.neg{color:#ef4444;font-weight:700}
+.empty{color:#bbb;text-align:center;padding:32px;font-style:italic;font-size:.88rem}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}.container{padding:12px 14px}}
+</style>
+</head>
+<body>
+
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-logo">🔒</div>
+    <div class="lock-title">Dashboard Gerencial</div>
+    <div class="lock-sub">LINUM Roupas de Linho — Acesso Restrito</div>
+    <label class="lock-label">Digite a senha para continuar</label>
+    <input class="lock-input" type="password" id="lock-pwd" maxlength="10" placeholder="••••" onkeydown="if(event.key==='Enter')checkPwd()">
+    <button class="lock-btn" onclick="checkPwd()">Entrar</button>
+    <div class="lock-error" id="lock-err"></div>
+  </div>
+  <div class="lock-footer">LINUM Roupas de Linho · Dashboard Confidencial<br>Desenvolvido por <strong style="color:rgba(255,255,255,.7)">NERVIA Tecnologia da Informação</strong></div>
+</div>
+
+
+<header style="flex-direction:column;align-items:flex-start;gap:2px">
+  <h1>📊 Dashboard Gerencial — LINUM Roupas de Linho</h1>
+  <div style="display:flex;width:100%;justify-content:space-between;align-items:center"><span id="periodo-label">—</span><span style="font-size:.72rem;opacity:.5">Desenvolvido por NERVIA Tecnologia da Informação</span></div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('geral',this)">📈 Visão Geral</div>
+  <div class="tab" onclick="showPage('lancamentos',this)">📋 Lançamentos</div>
+</div>
+
+<!-- FILTROS COMPARTILHADOS -->
+<div class="filters">
+  <div class="filter-group"><label>Ano:</label>
+    <select id="f-ano"><option value="">Todos</option></select>
+  </div>
+  <div class="filter-group"><label>Mês:</label>
+    <select id="f-mes">
+      <option value="">Todos</option>
+      <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+      <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+      <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+      <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+    </select>
+  </div>
+  <div class="filter-group"><label>Conta:</label>
+    <select id="f-conta">
+      <option value="">Todas</option><option value="Itau">Itaú</option><option value="Nubank">Nubank</option>
+    </select>
+  </div>
+  <!-- Filtros extras só na aba Lançamentos -->
+  <div class="filter-group" id="fc-cat" style="display:none"><label>Categoria:</label>
+    <select id="f-cat"><option value="">Todas</option></select>
+  </div>
+  <div class="filter-group" id="fc-tipo" style="display:none"><label>Tipo:</label>
+    <select id="f-tipo">
+      <option value="">Todos</option><option value="cred">Crédito</option><option value="deb">Débito</option>
+    </select>
+  </div>
+  <div class="filter-group" id="fc-busca" style="display:none">
+    <input type="text" id="f-busca" placeholder="Buscar descrição..." style="width:220px">
+  </div>
+  <button class="btn sec" onclick="resetFiltros()">✕ Limpar</button>
+</div>
+
+<!-- PÁGINA GERAL -->
+<div class="page active" id="page-geral">
+  <div class="container">
+    <div class="kpi-row">
+      <div class="kpi r"><div class="kpi-label">Receitas</div><div class="kpi-value" style="color:#22c55e" id="kpi-rec">—</div><div class="kpi-sub">Créditos totais</div></div>
+      <div class="kpi d"><div class="kpi-label">Despesas</div><div class="kpi-value" style="color:#ef4444" id="kpi-deb">—</div><div class="kpi-sub">Débitos totais</div></div>
+      <div class="kpi l"><div class="kpi-label">Resultado</div><div class="kpi-value" id="kpi-res">—</div><div class="kpi-sub">Rec − Desp</div></div>
+      <div class="kpi i"><div class="kpi-label">Insumos</div><div class="kpi-value" style="color:#f59e0b" id="kpi-ins">—</div><div class="kpi-sub">Matéria-prima</div></div>
+      <div class="kpi a"><div class="kpi-label">Aluguel</div><div class="kpi-value" style="color:#06b6d4" id="kpi-alg">—</div><div class="kpi-sub">Ipanema</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="card"><div class="card-title">Receitas × Despesas por Mês</div><div class="chart-wrap"><canvas id="ch-mensal"></canvas></div></div>
+      <div class="card"><div class="card-title">Resultado Líquido</div><div class="chart-wrap"><canvas id="ch-res"></canvas></div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="card"><div class="card-title">Top Despesas por Categoria</div><div class="chart-wrap"><canvas id="ch-cat"></canvas></div></div>
+      <div class="card"><div class="card-title">Distribuição Despesas</div><div class="chart-wrap"><canvas id="ch-pizza"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">
+        Detalhamento por Categoria
+        <span class="hint">👆 Clique na linha para ver os lançamentos</span>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Categoria</th><th class="tr">Créditos</th><th class="tr">Débitos</th><th class="tr">Saldo</th><th class="tc">Tipo</th><th class="tc">Qtd</th></tr></thead>
+        <tbody id="tb-cat"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- PÁGINA LANÇAMENTOS -->
+<div class="page" id="page-lancamentos">
+  <div class="container">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">
+        <span>Lançamentos &nbsp;<span class="pill" id="l-count">0</span></span>
+        <span id="l-totais" style="font-size:.8rem;color:#555;font-weight:400"></span>
+      </div>
+      <div class="tbl-wrap tall">
+        <table>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Conta</th><th class="tc">Tipo</th><th class="tr">Valor</th></tr></thead>
+          <tbody id="tb-lanc"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LANÇAMENTOS DE CATEGORIA -->
+<div class="modal-ov" id="modal-ov" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <div>
+        <h3 id="m-title">Lançamentos</h3>
+        <div class="sub" id="m-sub"></div>
+      </div>
+      <button class="modal-x" onclick="document.getElementById('modal-ov').classList.remove('open')">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tbl-wrap" style="max-height:400px"><table>
+        <thead><tr><th>Data</th><th>Descrição</th><th>Conta</th><th class="tc">Tipo</th><th class="tr">Valor</th></tr></thead>
+        <tbody id="tb-modal"></tbody>
+      </table></div>
+    </div>
+    <div class="modal-foot">
+      <span id="m-count"></span>
+      <span id="m-total"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+const RAW=[
+{"dt":"01/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":18.9},
+{"dt":"01/12/2025","desc":"Pix Sandra","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":278},
+{"dt":"01/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":2000,"d":0},
+{"dt":"01/12/2025","desc":"Pix Edneia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":60},
+{"dt":"01/12/2025","desc":"Pix Paulo Curatola","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":1322},
+{"dt":"02/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":91.7},
+{"dt":"02/12/2025","desc":"Pix Rachel","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":72},
+{"dt":"02/12/2025","desc":"Pix Julyana","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":320},
+{"dt":"02/12/2025","desc":"Pablio Paiva (operação)","cat":"Despesas Operação","am":"2025/12","ac":"Nubank","c":0,"d":56},
+{"dt":"02/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":1000,"d":0},
+{"dt":"03/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":8.2},
+{"dt":"03/12/2025","desc":"Pix Rachel","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":36},
+{"dt":"03/12/2025","desc":"Mandala Gastronomica (op)","cat":"Despesas Operação","am":"2025/12","ac":"Nubank","c":0,"d":24.64},
+{"dt":"03/12/2025","desc":"Pix Rosangela","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":130},
+{"dt":"03/12/2025","desc":"Pix Jeovane","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":350},
+{"dt":"04/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":58.7},
+{"dt":"04/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":2500,"d":0},
+{"dt":"04/12/2025","desc":"Pix Rachel","cat":"Pix","am":"2025/12","ac":"Nubank","c":460,"d":2339},
+{"dt":"04/12/2025","desc":"Pix Andreia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":262},
+{"dt":"05/12/2025","desc":"Pix Cristal","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":60},
+{"dt":"05/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":17.7},
+{"dt":"05/12/2025","desc":"Pix Edneia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":150},
+{"dt":"05/12/2025","desc":"Pix Lucia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":200},
+{"dt":"06/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":1000,"d":0},
+{"dt":"06/12/2025","desc":"Pix Tarcila","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":550},
+{"dt":"06/12/2025","desc":"Pix Rosangela","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":130},
+{"dt":"06/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":19.1},
+{"dt":"06/12/2025","desc":"Mandala Gastronomica (op)","cat":"Despesas Operação","am":"2025/12","ac":"Nubank","c":0,"d":117.6},
+{"dt":"06/12/2025","desc":"Pix Sandra","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":200},
+{"dt":"09/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":2000,"d":0},
+{"dt":"09/12/2025","desc":"Pix Luis Carlos","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":300},
+{"dt":"09/12/2025","desc":"Pix Neuza","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":520},
+{"dt":"10/12/2025","desc":"Pix Rosangela","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":130},
+{"dt":"11/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":53.9},
+{"dt":"12/12/2025","desc":"Pix Lucia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":55},
+{"dt":"12/12/2025","desc":"Pix Maria Lindalva","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":174.6},
+{"dt":"12/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":57.5},
+{"dt":"12/12/2025","desc":"Pix Gabriela","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":150},
+{"dt":"12/12/2025","desc":"Pix Tarcila","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":275},
+{"dt":"13/12/2025","desc":"Pix Sandra","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":100},
+{"dt":"13/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":2000,"d":0},
+{"dt":"13/12/2025","desc":"Pix Luiza Marilac","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":520},
+{"dt":"14/12/2025","desc":"Multidisplay (internet)","cat":"Internet e Telefonia","am":"2025/12","ac":"Nubank","c":0,"d":35},
+{"dt":"15/12/2025","desc":"Pix Elsi","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":554},
+{"dt":"15/12/2025","desc":"Pix Eucir","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":111},
+{"dt":"15/12/2025","desc":"Zona Sul (despesa op)","cat":"Despesas Operação","am":"2025/12","ac":"Nubank","c":0,"d":201.54},
+{"dt":"15/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":1500,"d":0},
+{"dt":"15/12/2025","desc":"Pix Andreia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":176},
+{"dt":"15/12/2025","desc":"Pix Lusmar","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":350},
+{"dt":"16/12/2025","desc":"Pix Rachel","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":36},
+{"dt":"16/12/2025","desc":"Pix Rosangela","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":260},
+{"dt":"16/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":33.6},
+{"dt":"17/12/2025","desc":"Pix Rachel","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":50},
+{"dt":"18/12/2025","desc":"Pix Andreia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":200},
+{"dt":"18/12/2025","desc":"Saldo compartilhado Frontera","cat":"Despesas Pessoais","am":"2025/12","ac":"Nubank","c":0,"d":118.46},
+{"dt":"22/12/2025","desc":"Pix Socorro","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":440},
+{"dt":"24/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":2000,"d":0},
+{"dt":"24/12/2025","desc":"Pix Lucia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":622},
+{"dt":"30/12/2025","desc":"Compra 99","cat":"Transporte","am":"2025/12","ac":"Nubank","c":0,"d":30.9},
+{"dt":"31/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":8000,"d":0},
+{"dt":"31/12/2025","desc":"Pix Gorette (LINUM)","cat":"Pix Gorette","am":"2025/12","ac":"Nubank","c":3000,"d":0},
+{"dt":"31/12/2025","desc":"Pix Keylla","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":65},
+{"dt":"31/12/2025","desc":"Pix Lucia","cat":"Pix","am":"2025/12","ac":"Nubank","c":0,"d":65},
+{"dt":"03/01/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/01","ac":"Nubank","c":213,"d":3000},
+{"dt":"07/01/2026","desc":"Pix Tarcila","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":825},
+{"dt":"07/01/2026","desc":"Pix Paulo Curatola","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":1071},
+{"dt":"08/01/2026","desc":"Pix Rosangela","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":130},
+{"dt":"12/01/2026","desc":"Pix Socorro","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":215},
+{"dt":"12/01/2026","desc":"Pix Lusmar","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":350},
+{"dt":"13/01/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":54},
+{"dt":"13/01/2026","desc":"Pix Gabriela","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":150},
+{"dt":"14/01/2026","desc":"Insumo Elvispdearaujo","cat":"Insumos","am":"2026/01","ac":"Nubank","c":0,"d":150},
+{"dt":"14/01/2026","desc":"Pix Rosangela","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":130},
+{"dt":"15/01/2026","desc":"MP Grafica","cat":"Despesas Operação","am":"2026/01","ac":"Nubank","c":0,"d":176},
+{"dt":"19/01/2026","desc":"Pix Socorro","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":360},
+{"dt":"19/01/2026","desc":"Insumo Pontotex","cat":"Insumos","am":"2026/01","ac":"Nubank","c":0,"d":37.53},
+{"dt":"19/01/2026","desc":"Compra 99","cat":"Transporte","am":"2026/01","ac":"Nubank","c":0,"d":108.4},
+{"dt":"22/01/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":120},
+{"dt":"23/01/2026","desc":"Pix Elsi","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":454},
+{"dt":"26/01/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/01","ac":"Itau","c":1971.76,"d":0},
+{"dt":"27/01/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/01","ac":"Itau","c":2984.08,"d":0},
+{"dt":"28/01/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/01","ac":"Itau","c":3224.38,"d":0},
+{"dt":"29/01/2026","desc":"Pix Rosangela","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":130},
+{"dt":"29/01/2026","desc":"Pix Eucir","cat":"Pix","am":"2026/01","ac":"Nubank","c":0,"d":144},
+{"dt":"30/01/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/01","ac":"Itau","c":2903.75,"d":0},
+{"dt":"30/01/2026","desc":"Pix CEA (operacao)","cat":"Despesas Operação","am":"2026/01","ac":"Nubank","c":0,"d":642.35},
+{"dt":"31/01/2026","desc":"Insumo Elvispdearaujo","cat":"Insumos","am":"2026/01","ac":"Nubank","c":0,"d":200},
+{"dt":"02/02/2026","desc":"Boleto Otimotex","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":4194.44},
+{"dt":"04/02/2026","desc":"Recebimento Rede Elo","cat":"Vendas","am":"2026/02","ac":"Itau","c":2336.21,"d":0},
+{"dt":"05/02/2026","desc":"Boleto Tiny (sistema)","cat":"Sistema","am":"2026/02","ac":"Itau","c":0,"d":162.42},
+{"dt":"05/02/2026","desc":"Boleto Aluguel Ipanema","cat":"Aluguel","am":"2026/02","ac":"Itau","c":0,"d":7012.45},
+{"dt":"06/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":1020.91,"d":0},
+{"dt":"09/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":1087.62,"d":0},
+{"dt":"09/02/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/02","ac":"Itau","c":0,"d":700},
+{"dt":"09/02/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":329.40},
+{"dt":"09/02/2026","desc":"Boleto Otimotex","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":2030.79},
+{"dt":"09/02/2026","desc":"Boleto Lulitex","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":1064},
+{"dt":"09/02/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":1427.40},
+{"dt":"10/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":3625.49,"d":0},
+{"dt":"11/02/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/02","ac":"Itau","c":2899.80,"d":0},
+{"dt":"12/02/2026","desc":"Claro Celular","cat":"Internet e Telefonia","am":"2026/02","ac":"Itau","c":0,"d":54.91},
+{"dt":"13/02/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/02","ac":"Itau","c":0,"d":1500},
+{"dt":"13/02/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":1345.30},
+{"dt":"13/02/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/02","ac":"Itau","c":1041.81,"d":0},
+{"dt":"18/02/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/02","ac":"Itau","c":1208.25,"d":0},
+{"dt":"18/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":868.97,"d":0},
+{"dt":"19/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":3471.09,"d":0},
+{"dt":"20/02/2026","desc":"Boleto Otimotex","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":2933.11},
+{"dt":"20/02/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/02","ac":"Itau","c":0,"d":396.69},
+{"dt":"23/02/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/02","ac":"Itau","c":0,"d":500},
+{"dt":"24/02/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/02","ac":"Itau","c":0,"d":500},
+{"dt":"24/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":2519.79,"d":0},
+{"dt":"25/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":946.15,"d":0},
+{"dt":"26/02/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/02","ac":"Itau","c":1903.59,"d":0},
+{"dt":"02/03/2026","desc":"Light Energia Ipanema","cat":"Energia Eletrica","am":"2026/03","ac":"Itau","c":0,"d":472.05},
+{"dt":"02/03/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1737.29},
+{"dt":"02/03/2026","desc":"Boleto Lulitex","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1088.46},
+{"dt":"02/03/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":80},
+{"dt":"03/03/2026","desc":"Boleto Aluguel Andreata","cat":"Aluguel","am":"2026/03","ac":"Itau","c":0,"d":3678.01},
+{"dt":"03/03/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/03","ac":"Itau","c":5529.20,"d":0},
+{"dt":"03/03/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":1497.03,"d":0},
+{"dt":"04/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":2000},
+{"dt":"04/03/2026","desc":"Recebimento Rede Visa+Mast Deb","cat":"Vendas","am":"2026/03","ac":"Itau","c":3027.18,"d":0},
+{"dt":"04/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":2000,"d":0},
+{"dt":"04/03/2026","desc":"Go Sign Grafica (op)","cat":"Despesas Operação","am":"2026/03","ac":"Nubank","c":0,"d":1000},
+{"dt":"05/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":2000},
+{"dt":"05/03/2026","desc":"Boleto Tiny (sistema)","cat":"Sistema","am":"2026/03","ac":"Itau","c":0,"d":162.42},
+{"dt":"05/03/2026","desc":"Boleto Aluguel Ipanema","cat":"Aluguel","am":"2026/03","ac":"Itau","c":0,"d":6923.13},
+{"dt":"05/03/2026","desc":"Recebimento Rede Elo","cat":"Vendas","am":"2026/03","ac":"Itau","c":3499.14,"d":0},
+{"dt":"05/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":2000,"d":0},
+{"dt":"05/03/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/03","ac":"Nubank","c":320,"d":1498},
+{"dt":"06/03/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":866.85,"d":0},
+{"dt":"07/03/2026","desc":"Pagamento Fatura Nubank","cat":"Faturas","am":"2026/03","ac":"Nubank","c":0,"d":84.87},
+{"dt":"09/03/2026","desc":"Simples Nacional","cat":"Impostos","am":"2026/03","ac":"Itau","c":0,"d":1663.56},
+{"dt":"10/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":3000},
+{"dt":"10/03/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1427.40},
+{"dt":"10/03/2026","desc":"Recebimento Rede Visa+Mast","cat":"Vendas","am":"2026/03","ac":"Itau","c":2454.07,"d":0},
+{"dt":"10/03/2026","desc":"MP Bandeira (operacao)","cat":"Despesas Operação","am":"2026/03","ac":"Nubank","c":0,"d":140},
+{"dt":"10/03/2026","desc":"Pix Tarcila","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":550},
+{"dt":"11/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":1000},
+{"dt":"11/03/2026","desc":"Boleto Excim+Otimotex","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":2360.21},
+{"dt":"11/03/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":1448.93,"d":0},
+{"dt":"11/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":1000,"d":0},
+{"dt":"11/03/2026","desc":"Pix Lusmar","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":600},
+{"dt":"12/03/2026","desc":"Claro Celular","cat":"Internet e Telefonia","am":"2026/03","ac":"Itau","c":0,"d":54.91},
+{"dt":"13/03/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":1829.77,"d":0},
+{"dt":"16/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":600},
+{"dt":"16/03/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1738.50},
+{"dt":"16/03/2026","desc":"Insumo Pontotex","cat":"Insumos","am":"2026/03","ac":"Nubank","c":0,"d":22.41},
+{"dt":"16/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":600,"d":0},
+{"dt":"16/03/2026","desc":"Pix Marcia Chaloub","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":174.63},
+{"dt":"17/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":500},
+{"dt":"17/03/2026","desc":"Light Energia Ipanema","cat":"Energia Eletrica","am":"2026/03","ac":"Itau","c":0,"d":472.30},
+{"dt":"17/03/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":2066.90,"d":0},
+{"dt":"17/03/2026","desc":"Insumo Pacotes Embrulhos","cat":"Insumos","am":"2026/03","ac":"Nubank","c":0,"d":56},
+{"dt":"17/03/2026","desc":"Receita Federal IRPJ","cat":"Impostos","am":"2026/03","ac":"Nubank","c":0,"d":82.05},
+{"dt":"17/03/2026","desc":"Aluguel Andreata (retorno)","cat":"Aluguel","am":"2026/03","ac":"Nubank","c":564.13,"d":0},
+{"dt":"17/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":500,"d":0},
+{"dt":"17/03/2026","desc":"Pix Marcia Chaloub","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":833.86},
+{"dt":"17/03/2026","desc":"Pix Edneia","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":290},
+{"dt":"19/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":600},
+{"dt":"19/03/2026","desc":"Boleto Lulitex","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1064},
+{"dt":"19/03/2026","desc":"Boleto CREA (obra Gavea)","cat":"Obra Gavea","am":"2026/03","ac":"Itau","c":0,"d":108.39},
+{"dt":"19/03/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":1645.51,"d":0},
+{"dt":"19/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":600,"d":0},
+{"dt":"19/03/2026","desc":"Pix Gabriela","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":170.5},
+{"dt":"23/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":8350},
+{"dt":"23/03/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/03","ac":"Itau","c":1194.09,"d":0},
+{"dt":"24/03/2026","desc":"Recebimento Amex","cat":"Vendas","am":"2026/03","ac":"Itau","c":698.96,"d":0},
+{"dt":"25/03/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/03","ac":"Itau","c":3013.01,"d":0},
+{"dt":"26/03/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/03","ac":"Itau","c":1545.13,"d":0},
+{"dt":"27/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":500},
+{"dt":"27/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":500,"d":0},
+{"dt":"28/03/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":150},
+{"dt":"28/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":600,"d":0},
+{"dt":"28/03/2026","desc":"Pix Aline Cupertino","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":378},
+{"dt":"30/03/2026","desc":"Simples Nacional","cat":"Impostos","am":"2026/03","ac":"Itau","c":0,"d":2257.74},
+{"dt":"30/03/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/03","ac":"Itau","c":0,"d":2100},
+{"dt":"30/03/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/03","ac":"Itau","c":0,"d":1738.50},
+{"dt":"30/03/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/03","ac":"Itau","c":5178.87,"d":0},
+{"dt":"30/03/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/03","ac":"Itau","c":2211.38,"d":0},
+{"dt":"30/03/2026","desc":"Recebimento Rede Deb","cat":"Vendas","am":"2026/03","ac":"Itau","c":2374.05,"d":0},
+{"dt":"30/03/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/03","ac":"Nubank","c":1500,"d":0},
+{"dt":"30/03/2026","desc":"Pix Lusmar","cat":"Pix","am":"2026/03","ac":"Nubank","c":0,"d":250},
+{"dt":"01/04/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":92},
+{"dt":"02/04/2026","desc":"Pix Tarcisio","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":130},
+{"dt":"03/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":2600,"d":0},
+{"dt":"03/04/2026","desc":"Pix Orlando Baldini","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":1600},
+{"dt":"03/04/2026","desc":"Pix Edneia","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":160},
+{"dt":"04/04/2026","desc":"Jose Cesario (op)","cat":"Despesas Operação","am":"2026/04","ac":"Nubank","c":0,"d":300},
+{"dt":"06/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":4424.39,"d":0},
+{"dt":"06/04/2026","desc":"Boleto Tiny (sistema)","cat":"Sistema","am":"2026/04","ac":"Itau","c":0,"d":162.42},
+{"dt":"06/04/2026","desc":"Boleto Aluguel Ipanema","cat":"Aluguel","am":"2026/04","ac":"Itau","c":0,"d":6923.13},
+{"dt":"06/04/2026","desc":"Tributo Municipal RJ","cat":"Impostos","am":"2026/04","ac":"Itau","c":0,"d":1352.70},
+{"dt":"06/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":2600},
+{"dt":"07/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":129,"d":0},
+{"dt":"08/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":3500},
+{"dt":"08/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":3500,"d":0},
+{"dt":"08/04/2026","desc":"Pix Elizabeth","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":897},
+{"dt":"08/04/2026","desc":"Pix Renato Moledo","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":2000},
+{"dt":"09/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":2800},
+{"dt":"09/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":5400,"d":0},
+{"dt":"09/04/2026","desc":"Boleto GRPQA (imposto)","cat":"Impostos","am":"2026/04","ac":"Nubank","c":0,"d":4524.34},
+{"dt":"09/04/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":1560},
+{"dt":"10/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":3000},
+{"dt":"10/04/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":200,"d":0},
+{"dt":"10/04/2026","desc":"Pix Marcia Chaloub (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":6000},
+{"dt":"10/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":3000,"d":0},
+{"dt":"10/04/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/04","ac":"Nubank","c":1500,"d":1560},
+{"dt":"10/04/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":440},
+{"dt":"10/04/2026","desc":"Pix Edneia","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":130},
+{"dt":"11/04/2026","desc":"Pix Orlando","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":2000},
+{"dt":"12/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":500,"d":0},
+{"dt":"12/04/2026","desc":"Pagamento Fatura Nubank","cat":"Faturas","am":"2026/04","ac":"Nubank","c":0,"d":424.91},
+{"dt":"13/04/2026","desc":"Claro Celular","cat":"Internet e Telefonia","am":"2026/04","ac":"Itau","c":0,"d":54.91},
+{"dt":"13/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":1500},
+{"dt":"13/04/2026","desc":"Recebimento Amex+Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":5890.72,"d":0},
+{"dt":"13/04/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/04","ac":"Itau","c":0,"d":1438.80},
+{"dt":"13/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":1000,"d":0},
+{"dt":"13/04/2026","desc":"Pix Aline Cupertino","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":784},
+{"dt":"14/04/2026","desc":"Boleto Excim+Otimotex","cat":"Insumos","am":"2026/04","ac":"Itau","c":0,"d":4745.18},
+{"dt":"14/04/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":31},
+{"dt":"15/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":1586.57,"d":0},
+{"dt":"16/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":1000},
+{"dt":"16/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":4264.37,"d":0},
+{"dt":"16/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":1000,"d":0},
+{"dt":"16/04/2026","desc":"Pix Lusmar","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":350},
+{"dt":"17/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":600},
+{"dt":"17/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":3957.16,"d":0},
+{"dt":"17/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":600,"d":0},
+{"dt":"17/04/2026","desc":"Pix Jussara","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":508},
+{"dt":"18/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":2000,"d":0},
+{"dt":"18/04/2026","desc":"Pix Orlando","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":1000},
+{"dt":"19/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":500,"d":0},
+{"dt":"19/04/2026","desc":"Pix Luiza Marilac","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":640},
+{"dt":"20/04/2026","desc":"Internet Gavea NEO","cat":"Internet e Telefonia","am":"2026/04","ac":"Itau","c":0,"d":130},
+{"dt":"20/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":11187.14,"d":0},
+{"dt":"20/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":2500},
+{"dt":"20/04/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/04","ac":"Itau","c":0,"d":396.18},
+{"dt":"22/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":4000},
+{"dt":"23/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":1800,"d":0},
+{"dt":"23/04/2026","desc":"Pix Orlando","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":1500},
+{"dt":"24/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":2600},
+{"dt":"24/04/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":1319.68,"d":0},
+{"dt":"25/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":3500,"d":0},
+{"dt":"25/04/2026","desc":"Pix Orlando","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":2000},
+{"dt":"25/04/2026","desc":"Pix Aline Cupertino","cat":"Pix","am":"2026/04","ac":"Nubank","c":0,"d":1164},
+{"dt":"27/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":4500},
+{"dt":"27/04/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/04","ac":"Itau","c":0,"d":1248.60},
+{"dt":"27/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":5193.49,"d":0},
+{"dt":"28/04/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/04","ac":"Itau","c":1358.13,"d":0},
+{"dt":"28/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":1000,"d":0},
+{"dt":"29/04/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":838.59,"d":0},
+{"dt":"30/04/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/04","ac":"Itau","c":0,"d":1000},
+{"dt":"30/04/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/04","ac":"Itau","c":1956.01,"d":0},
+{"dt":"30/04/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/04","ac":"Nubank","c":1000,"d":0},
+{"dt":"04/05/2026","desc":"Boleto Cond. Gavea","cat":"Taxas Condominio","am":"2026/05","ac":"Itau","c":0,"d":2775.40},
+{"dt":"04/05/2026","desc":"Boleto Aluguel Ipanema","cat":"Aluguel","am":"2026/05","ac":"Itau","c":0,"d":7190.68},
+{"dt":"04/05/2026","desc":"Pix Marcia Chaloub (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":6000},
+{"dt":"04/05/2026","desc":"Recebimento Rede Mast+Visa+Elo","cat":"Vendas","am":"2026/05","ac":"Itau","c":8503.49,"d":0},
+{"dt":"04/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":2000},
+{"dt":"04/05/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":77},
+{"dt":"04/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":1500,"d":0},
+{"dt":"04/05/2026","desc":"Pix Paulo Curatola","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":1026},
+{"dt":"04/05/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":60},
+{"dt":"05/05/2026","desc":"IOF","cat":"Tarifas Bancarias","am":"2026/05","ac":"Itau","c":0,"d":21.80},
+{"dt":"05/05/2026","desc":"Tributo Municipal RJ","cat":"Impostos","am":"2026/05","ac":"Itau","c":0,"d":1352.70},
+{"dt":"05/05/2026","desc":"Recebimento Rede Mast+Elo","cat":"Vendas","am":"2026/05","ac":"Itau","c":3266.41,"d":0},
+{"dt":"05/05/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":51},
+{"dt":"05/05/2026","desc":"Pix Silvana","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":445},
+{"dt":"05/05/2026","desc":"Pix Rosangela","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":145},
+{"dt":"06/05/2026","desc":"Boleto Tiny (sistema)","cat":"Sistema","am":"2026/05","ac":"Itau","c":0,"d":162.42},
+{"dt":"06/05/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/05","ac":"Itau","c":3554.88,"d":0},
+{"dt":"07/05/2026","desc":"Recebimento Rede Mastercard Deb","cat":"Vendas","am":"2026/05","ac":"Itau","c":1384.45,"d":0},
+{"dt":"07/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":2500},
+{"dt":"07/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":2500,"d":0},
+{"dt":"07/05/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":2043},
+{"dt":"07/05/2026","desc":"Pix Elizabeth","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":378},
+{"dt":"08/05/2026","desc":"Vale Transporte JAE","cat":"Vale Transporte","am":"2026/05","ac":"Itau","c":0,"d":80},
+{"dt":"08/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":3500},
+{"dt":"08/05/2026","desc":"Pix Renato Moledo (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":2300},
+{"dt":"08/05/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/05","ac":"Itau","c":2974.35,"d":0},
+{"dt":"08/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":3500,"d":0},
+{"dt":"08/05/2026","desc":"Insumo Txello Vintage","cat":"Insumos","am":"2026/05","ac":"Nubank","c":0,"d":175},
+{"dt":"08/05/2026","desc":"Pix Orlando","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":2000},
+{"dt":"08/05/2026","desc":"Pagamento Fatura Nubank","cat":"Faturas","am":"2026/05","ac":"Nubank","c":0,"d":24.04},
+{"dt":"09/05/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":120},
+{"dt":"11/05/2026","desc":"Business Itau","cat":"Servicos","am":"2026/05","ac":"Itau","c":0,"d":2834.43},
+{"dt":"11/05/2026","desc":"Vale Transporte JAE","cat":"Vale Transporte","am":"2026/05","ac":"Itau","c":0,"d":80},
+{"dt":"11/05/2026","desc":"Claro Internet","cat":"Internet e Telefonia","am":"2026/05","ac":"Itau","c":0,"d":61.62},
+{"dt":"11/05/2026","desc":"Light Energia Ipanema","cat":"Energia Eletrica","am":"2026/05","ac":"Itau","c":0,"d":572.46},
+{"dt":"11/05/2026","desc":"Light Energia Gavea","cat":"Energia Eletrica","am":"2026/05","ac":"Itau","c":0,"d":284.44},
+{"dt":"11/05/2026","desc":"Certificado Digital Penta","cat":"Despesas Operação","am":"2026/05","ac":"Itau","c":0,"d":232},
+{"dt":"11/05/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/05","ac":"Itau","c":0,"d":1241.16},
+{"dt":"11/05/2026","desc":"Simples Nacional","cat":"Impostos","am":"2026/05","ac":"Itau","c":0,"d":2485.94},
+{"dt":"11/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":32239.41,"d":0},
+{"dt":"11/05/2026","desc":"Pix Gabriela","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":280},
+{"dt":"12/05/2026","desc":"Claro Celular","cat":"Internet e Telefonia","am":"2026/05","ac":"Itau","c":0,"d":54.91},
+{"dt":"12/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":2681.43,"d":0},
+{"dt":"12/05/2026","desc":"Pix Rachel","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":15},
+{"dt":"13/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":11000},
+{"dt":"13/05/2026","desc":"Boleto Excim+Otimotex","cat":"Insumos","am":"2026/05","ac":"Itau","c":0,"d":4411.38},
+{"dt":"13/05/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/05","ac":"Itau","c":1700.18,"d":0},
+{"dt":"14/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":1000},
+{"dt":"14/05/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/05","ac":"Itau","c":0,"d":392.25},
+{"dt":"14/05/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":4691.49,"d":0},
+{"dt":"14/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":1000,"d":0},
+{"dt":"15/05/2026","desc":"Recebimento Rede Mast+Visa+Amex","cat":"Vendas","am":"2026/05","ac":"Itau","c":5646.89,"d":0},
+{"dt":"16/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":1000,"d":0},
+{"dt":"18/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":2500},
+{"dt":"18/05/2026","desc":"Light Energia Ipanema","cat":"Energia Eletrica","am":"2026/05","ac":"Itau","c":0,"d":584.78},
+{"dt":"18/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":24541.83,"d":0},
+{"dt":"18/05/2026","desc":"Vale Transporte JAE","cat":"Vale Transporte","am":"2026/05","ac":"Itau","c":0,"d":70},
+{"dt":"18/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":500,"d":0},
+{"dt":"18/05/2026","desc":"Pix Lusmar","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":350},
+{"dt":"18/05/2026","desc":"Pix Nadia","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":505},
+{"dt":"19/05/2026","desc":"Boleto Excim","cat":"Insumos","am":"2026/05","ac":"Itau","c":0,"d":3067.67},
+{"dt":"20/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":1000},
+{"dt":"20/05/2026","desc":"Boleto Excim (multiplos)","cat":"Insumos","am":"2026/05","ac":"Itau","c":0,"d":10340.7},
+{"dt":"20/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":1000,"d":0},
+{"dt":"20/05/2026","desc":"Pix Lucia Helena","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":616},
+{"dt":"21/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":20032},
+{"dt":"21/05/2026","desc":"Recebimento Rede Elo+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":3626.96,"d":0},
+{"dt":"22/05/2026","desc":"Boleto Cond. Gavea","cat":"Taxas Condominio","am":"2026/05","ac":"Itau","c":0,"d":1000},
+{"dt":"25/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":500},
+{"dt":"25/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":7677.47,"d":0},
+{"dt":"25/05/2026","desc":"Pix Gorette (Nubank)","cat":"Pix Gorette","am":"2026/05","ac":"Nubank","c":500,"d":0},
+{"dt":"25/05/2026","desc":"Pix Edneia","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":100},
+{"dt":"25/05/2026","desc":"Pix Sandra","cat":"Pix","am":"2026/05","ac":"Nubank","c":0,"d":70},
+{"dt":"26/05/2026","desc":"Vale Transporte JAE","cat":"Vale Transporte","am":"2026/05","ac":"Itau","c":0,"d":60},
+{"dt":"26/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":6361.85,"d":0},
+{"dt":"27/05/2026","desc":"Pix Gorette (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":1000},
+{"dt":"27/05/2026","desc":"Recebimento Rede Mast+Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":4686.06,"d":0},
+{"dt":"28/05/2026","desc":"Internet Gavea NEO","cat":"Internet e Telefonia","am":"2026/05","ac":"Itau","c":0,"d":130},
+{"dt":"28/05/2026","desc":"Pix Silvana (Itau)","cat":"Pix","am":"2026/05","ac":"Itau","c":0,"d":74},
+{"dt":"28/05/2026","desc":"Recebimento Rede Visa","cat":"Vendas","am":"2026/05","ac":"Itau","c":1920.64,"d":0},
+{"dt":"29/05/2026","desc":"Simples Nacional","cat":"Impostos","am":"2026/05","ac":"Itau","c":0,"d":3139.52},
+{"dt":"29/05/2026","desc":"Recebimento Rede Mastercard","cat":"Vendas","am":"2026/05","ac":"Itau","c":843.84,"d":0}
+];
+
+const CORES=['#4f46e5','#22c55e','#ef4444','#f59e0b','#06b6d4','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#e11d48','#0ea5e9','#a855f7'];
+let charts={}, curPage='geral';
+
+const NM={'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
+function fmt(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);}
+function nomeMes(am){const[y,m]=am.split('/');return NM[m]+'/'+y.slice(2);}
+function sortDt(a,b){const p=s=>s.split('/').reverse().join('');return p(a.dt).localeCompare(p(b.dt));}
+
+function filtrar(extraCat, extraTipo, extraBusca){
+  const ano=document.getElementById('f-ano').value;
+  const mes=document.getElementById('f-mes').value;
+  const conta=document.getElementById('f-conta').value;
+  const cat=extraCat||document.getElementById('f-cat').value;
+  const tipo=extraTipo||document.getElementById('f-tipo').value;
+  const busca=(extraBusca!==undefined?extraBusca:document.getElementById('f-busca').value).toLowerCase();
+  return RAW.filter(r=>{
+    const[y,mm]=r.am.split('/');
+    if(ano&&y!==ano)return false;
+    if(mes&&mm!==mes)return false;
+    if(conta&&r.ac!==conta)return false;
+    if(cat&&r.cat!==cat)return false;
+    if(tipo==='cred'&&r.c===0)return false;
+    if(tipo==='deb'&&r.d===0)return false;
+    if(busca&&!r.desc.toLowerCase().includes(busca))return false;
+    return true;
+  });
+}
+
+function showPage(p, el){
+  curPage=p;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  el.classList.add('active');
+  const lancFiltros=['fc-cat','fc-tipo','fc-busca'];
+  lancFiltros.forEach(id=>document.getElementById(id).style.display=p==='lancamentos'?'flex':'none');
+  if(p==='lancamentos') renderLancamentos();
+  else renderGeral();
+}
+
+function renderGeral(){
+  const dados=filtrar('','','');
+  let tRec=0,tDeb=0,tIns=0,tAlg=0;
+  dados.forEach(r=>{tRec+=r.c;tDeb+=r.d;if(r.cat==='Insumos')tIns+=r.d;if(r.cat==='Aluguel')tAlg+=r.d;});
+  const res=tRec-tDeb;
+  document.getElementById('kpi-rec').textContent=fmt(tRec);
+  document.getElementById('kpi-deb').textContent=fmt(tDeb);
+  const el=document.getElementById('kpi-res');
+  el.textContent=fmt(res); el.style.color=res>=0?'#22c55e':'#ef4444';
+  document.getElementById('kpi-ins').textContent=fmt(tIns);
+  document.getElementById('kpi-alg').textContent=fmt(tAlg);
+  const mu=[...new Set(dados.map(r=>r.am))].sort();
+  document.getElementById('periodo-label').textContent=mu.length?nomeMes(mu[0])+' – '+nomeMes(mu[mu.length-1]):'Sem dados';
+
+  // Mensal
+  const mm={};
+  dados.forEach(r=>{if(!mm[r.am])mm[r.am]={c:0,d:0};mm[r.am].c+=r.c;mm[r.am].d+=r.d;});
+  const meses=Object.keys(mm).sort();
+  const lm=meses.map(nomeMes);
+  if(charts.m)charts.m.destroy();
+  charts.m=new Chart(document.getElementById('ch-mensal'),{type:'bar',data:{labels:lm,datasets:[
+    {label:'Receitas',data:meses.map(m=>mm[m].c),backgroundColor:'#22c55e99',borderColor:'#22c55e',borderWidth:1,borderRadius:4},
+    {label:'Despesas',data:meses.map(m=>mm[m].d),backgroundColor:'#ef444499',borderColor:'#ef4444',borderWidth:1,borderRadius:4}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}},scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  const sa=meses.map(m=>mm[m].c-mm[m].d);
+  if(charts.r)charts.r.destroy();
+  charts.r=new Chart(document.getElementById('ch-res'),{type:'bar',data:{labels:lm,datasets:[{label:'Resultado',data:sa,backgroundColor:sa.map(v=>v>=0?'#4f46e580':'#ef444480'),borderColor:sa.map(v=>v>=0?'#4f46e5':'#ef4444'),borderWidth:2,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${fmt(c.raw)}`}}},scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  // Categorias
+  const cm={};
+  dados.forEach(r=>{if(!cm[r.cat])cm[r.cat]={c:0,d:0,n:0};cm[r.cat].c+=r.c;cm[r.cat].d+=r.d;cm[r.cat].n++;});
+  const cD=Object.entries(cm).filter(([,v])=>v.d>0).sort((a,b)=>b[1].d-a[1].d);
+
+  if(charts.cb)charts.cb.destroy();
+  charts.cb=new Chart(document.getElementById('ch-cat'),{type:'bar',data:{labels:cD.slice(0,10).map(([k])=>k),datasets:[{label:'Débitos',data:cD.slice(0,10).map(([,v])=>v.d),backgroundColor:CORES,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${fmt(c.raw)}`}}},scales:{x:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  if(charts.p)charts.p.destroy();
+  const top=cD.slice(0,9);
+  charts.p=new Chart(document.getElementById('ch-pizza'),{type:'doughnut',data:{labels:top.map(([k])=>k),datasets:[{data:top.map(([,v])=>v.d),backgroundColor:CORES,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}});
+
+  // Tabela categorias
+  const tb=document.getElementById('tb-cat'); tb.innerHTML='';
+  Object.entries(cm).sort((a,b)=>(b[1].c+b[1].d)-(a[1].c+a[1].d)).forEach(([cat,v])=>{
+    const s=v.c-v.d; const iR=v.c>v.d;
+    const tr=document.createElement('tr');
+    tr.className='cat-row';
+    tr.title='Clique para ver os lançamentos';
+    tr.onclick=()=>openModal(cat, dados);
+    tr.innerHTML=`<td><span class="cat-link">${cat}</span></td>
+      <td class="tr" style="color:#22c55e">${v.c>0?fmt(v.c):'—'}</td>
+      <td class="tr" style="color:#ef4444">${v.d>0?fmt(v.d):'—'}</td>
+      <td class="tr" style="color:${s>=0?'#22c55e':'#ef4444'};font-weight:700">${fmt(s)}</td>
+      <td class="tc"><span class="badge ${iR?'rec':'desp'}">${iR?'Receita':'Despesa'}</span></td>
+      <td class="tc"><span class="pill">${v.n}</span></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function renderLancamentos(){
+  const dados=filtrar().sort(sortDt);
+  document.getElementById('l-count').textContent=dados.length;
+  let tC=0,tD=0; dados.forEach(r=>{tC+=r.c;tD+=r.d;});
+  document.getElementById('l-totais').textContent=`Créditos: ${fmt(tC)} | Débitos: ${fmt(tD)} | Saldo: ${fmt(tC-tD)}`;
+  const tb=document.getElementById('tb-lanc'); tb.innerHTML='';
+  if(!dados.length){tb.innerHTML='<tr><td colspan="6" class="empty">Nenhum lançamento encontrado.</td></tr>';return;}
+  dados.forEach(r=>{
+    const tr=document.createElement('tr');
+    const isCred=r.c>0&&r.d===0;
+    const isBoth=r.c>0&&r.d>0;
+    const v=isBoth?r.c-r.d:isCred?r.c:r.d;
+    tr.innerHTML=`<td>${r.dt}</td><td style="white-space:normal;max-width:300px">${r.desc}</td>
+      <td><span class="pill" style="cursor:pointer" onclick="filtrarPorCat('${r.cat}')">${r.cat}</span></td>
+      <td><span class="badge ${r.ac==='Itau'?'it':'nu'}">${r.ac}</span></td>
+      <td class="tc"><span class="badge ${isBoth?'rec':isCred?'cred':'deb2'}">${isBoth?'Ambos':isCred?'Créd':'Déb'}</span></td>
+      <td class="tr ${isBoth?(v>=0?'pos':'neg'):isCred?'pos':'neg'}" style="font-weight:600">${fmt(v)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function filtrarPorCat(cat){
+  showPage('lancamentos', document.querySelectorAll('.tab')[1]);
+  document.getElementById('f-cat').value=cat;
+  renderLancamentos();
+}
+
+function openModal(cat, dados){
+  const items=dados.filter(r=>r.cat===cat).sort(sortDt);
+  document.getElementById('m-title').textContent='📁 '+cat;
+  document.getElementById('m-sub').textContent=document.getElementById('periodo-label').textContent;
+  const tb=document.getElementById('tb-modal'); tb.innerHTML='';
+  let tC=0,tD=0;
+  if(!items.length){tb.innerHTML='<tr><td colspan="5" class="empty">Sem lançamentos.</td></tr>';}
+  else items.forEach(r=>{
+    tC+=r.c; tD+=r.d;
+    const isCred=r.c>0&&r.d===0; const isBoth=r.c>0&&r.d>0;
+    const v=isBoth?r.c-r.d:isCred?r.c:r.d;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.dt}</td><td style="white-space:normal;max-width:340px">${r.desc}</td>
+      <td><span class="badge ${r.ac==='Itau'?'it':'nu'}">${r.ac}</span></td>
+      <td class="tc"><span class="badge ${isBoth?'rec':isCred?'cred':'deb2'}">${isBoth?'Ambos':isCred?'Créd':'Déb'}</span></td>
+      <td class="tr ${isBoth?(v>=0?'pos':'neg'):isCred?'pos':'neg'}" style="font-weight:700">${fmt(v)}</td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('m-count').textContent=items.length+' lançamento(s)';
+  const saldo=tC-tD;
+  document.getElementById('m-total').innerHTML=`Créditos: <span class="pos">${fmt(tC)}</span> &nbsp;|&nbsp; Débitos: <span class="neg">${fmt(tD)}</span> &nbsp;|&nbsp; Saldo: <span class="${saldo>=0?'pos':'neg'}">${fmt(saldo)}</span>`;
+  document.getElementById('modal-ov').classList.add('open');
+}
+
+function closeModal(e){if(e.target===document.getElementById('modal-ov'))document.getElementById('modal-ov').classList.remove('open');}
+
+function resetFiltros(){
+  ['f-ano','f-mes','f-conta','f-cat','f-tipo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-busca').value='';
+  if(curPage==='geral')renderGeral(); else renderLancamentos();
+}
+
+window.addEventListener('load',()=>{
+  // Preenche anos
+  const anos=[...new Set(RAW.map(r=>r.am.split('/')[0]))].sort();
+  const selA=document.getElementById('f-ano');
+  anos.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;selA.appendChild(o);});
+  // Preenche categorias
+  const cats=[...new Set(RAW.map(r=>r.cat))].sort();
+  const selC=document.getElementById('f-cat');
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;selC.appendChild(o);});
+  // Listeners
+  ['f-ano','f-mes','f-conta'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+    if(curPage==='geral')renderGeral(); else renderLancamentos();
+  }));
+  ['f-cat','f-tipo'].forEach(id=>document.getElementById(id).addEventListener('change',renderLancamentos));
+  document.getElementById('f-busca').addEventListener('input',renderLancamentos);
+  renderGeral();
+});
+
+(function(){
+  var PWD='0901';
+  var el=document.getElementById('lock-screen');
+  if(sessionStorage.getItem('linum_auth')==='1'){el.style.display='none';return;}
+  window.checkPwd=function(){
+    var v=document.getElementById('lock-pwd').value;
+    if(v===PWD){sessionStorage.setItem('linum_auth','1');el.style.display='none';}
+    else{var e=document.getElementById('lock-err');e.textContent='Senha incorreta. Tente novamente.';document.getElementById('lock-pwd').value='';document.getElementById('lock-pwd').focus();setTimeout(function(){e.textContent='';},3000);}
+  };
+})();
+
+</script>
+</body>
+</html>
