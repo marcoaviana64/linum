@@ -727,12 +727,17 @@ window.addEventListener('load',()=>{
 });
 
 (function(){
-  var PWD='0901';
+  var HASH='07c4b46160c71a2135063b4c47638ce816fc99968dbce0e52faec985bbbb27fd';
   var el=document.getElementById('lock-screen');
   if(sessionStorage.getItem('linum_auth')==='1'){el.style.display='none';return;}
-  window.checkPwd=function(){
+  async function sha256(str){
+    var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  window.checkPwd=async function(){
     var v=document.getElementById('lock-pwd').value;
-    if(v===PWD){sessionStorage.setItem('linum_auth','1');el.style.display='none';}
+    var h=await sha256(v);
+    if(h===HASH){sessionStorage.setItem('linum_auth','1');el.style.display='none';}
     else{var e=document.getElementById('lock-err');e.textContent='Senha incorreta. Tente novamente.';document.getElementById('lock-pwd').value='';document.getElementById('lock-pwd').focus();setTimeout(function(){e.textContent='';},3000);}
   };
 })();
