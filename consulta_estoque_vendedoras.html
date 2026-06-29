@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta de Estoque — LINUM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;font-size:15px;-webkit-text-size-adjust:100%}
+/* LOCK */
+#lock-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0;padding:16px}
+.lock-box{background:white;border-radius:16px;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;width:100%;max-width:340px}
+.lock-logo{font-size:2.2rem;margin-bottom:6px}
+.lock-title{font-size:1.1rem;font-weight:700;color:#1a1a2e;margin-bottom:4px}
+.lock-sub{font-size:.82rem;color:#888;margin-bottom:28px}
+.lock-label{font-size:.78rem;font-weight:600;color:#555;text-align:left;display:block;margin-bottom:6px}
+.lock-input{width:100%;padding:14px 16px;border:2px solid #e0e0e0;border-radius:8px;font-size:1.2rem;letter-spacing:6px;text-align:center;outline:none;transition:border .2s}
+.lock-input:focus{border-color:#4f46e5}
+.lock-btn{margin-top:16px;width:100%;padding:14px;background:#4f46e5;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer}
+.lock-btn:hover{background:#3730a3}
+.lock-error{color:#ef4444;font-size:.82rem;margin-top:10px;min-height:18px}
+.lock-footer{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:20px;text-align:center;line-height:1.6}
+/* LAYOUT */
+#app{display:none}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:16px 18px;position:sticky;top:0;z-index:50}
+header h1{font-size:1.15rem;font-weight:700;letter-spacing:.3px}
+header .sub{font-size:.74rem;opacity:.6;margin-top:2px}
+.container{padding:14px;max-width:760px;margin:0 auto}
+/* SEARCH */
+.search-box{position:relative;margin-bottom:10px}
+.search-box input{width:100%;padding:14px 14px 14px 42px;border:2px solid #e0e0e0;border-radius:10px;font-size:1rem;background:white;outline:none}
+.search-box input:focus{border-color:#4f46e5}
+.search-box .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1.1rem;opacity:.4}
+/* FILTERS */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.filters select{flex:1;min-width:100px;padding:10px 8px;border:1px solid #ddd;border-radius:8px;font-size:.85rem;background:white;color:#333}
+.chk-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:.85rem;color:#555;font-weight:600}
+.chk-row input{width:18px;height:18px;accent-color:#4f46e5}
+.results-count{font-size:.78rem;color:#888;margin-bottom:10px;font-weight:600}
+/* CARDS */
+.prod-card{background:white;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.prod-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+.prod-name{font-weight:700;font-size:1rem;color:#1a1a2e;line-height:1.3}
+.prod-price{font-weight:700;font-size:.95rem;color:#16a34a;white-space:nowrap}
+.prod-price.np{color:#aaa;font-weight:600;font-size:.78rem}
+.prod-meta{font-size:.76rem;color:#888;margin-bottom:10px}
+.badge{display:inline-block;padding:1px 8px;border-radius:20px;font-size:.68rem;font-weight:700;color:white}
+.badge.gv{background:#8b5cf6}.badge.ip{background:#06b6d4}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 10px;border-radius:8px;font-size:.74rem;min-width:64px;border:1.5px solid transparent}
+.chip.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.chip.zero{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.chip-cor{font-weight:700;font-size:.72rem;text-align:center}
+.chip-tam{font-size:.7rem;opacity:.85}
+.chip-qtd{font-size:.68rem;font-weight:700;margin-top:2px}
+.empty-state{text-align:center;color:#999;padding:50px 20px;font-size:.9rem}
+.empty-state .e-icon{font-size:2.4rem;margin-bottom:10px;display:block}
+.footer-note{text-align:center;font-size:.7rem;color:#aaa;padding:18px 0 30px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-logo">🔒</div>
+    <div class="lock-title">Consulta de Estoque</div>
+    <div class="lock-sub">LINUM Roupas de Linho — Equipe de Vendas</div>
+    <label class="lock-label">Digite a senha para continuar</label>
+    <input class="lock-input" type="password" id="lock-pwd" maxlength="12" placeholder="••••" inputmode="text" onkeydown="if(event.key==='Enter')checkPwd()">
+    <button class="lock-btn" onclick="checkPwd()">Entrar</button>
+    <div class="lock-error" id="lock-err"></div>
+  </div>
+  <div class="lock-footer">LINUM Roupas de Linho · Consulta de Estoque<br>Desenvolvido por <strong style="color:rgba(255,255,255,.7)">NERVIA Tecnologia da Informação</strong></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <h1>🧵 Consulta de Estoque — LINUM</h1>
+    <div class="sub">Verifique referência, produto, cor, tamanho, loja e valor de venda</div>
+  </header>
+
+  <div class="container">
+    <div class="search-box">
+      <span class="icon">🔎</span>
+      <input type="text" id="f-busca" placeholder="Buscar por referência ou nome do produto...">
+    </div>
+
+    <div class="filters">
+      <select id="f-loja"><option value="">Todas as lojas</option></select>
+      <select id="f-cor"><option value="">Todas as cores</option></select>
+      <select id="f-tam"><option value="">Todos os tamanhos</option></select>
+    </div>
+
+    <label class="chk-row"><input type="checkbox" id="f-disp"> Mostrar somente o que tem em estoque</label>
+
+    <div class="results-count" id="results-count"></div>
+    <div id="results"></div>
+
+    <div class="footer-note">Dados de estoque referentes à última atualização do controle interno.<br>Desenvolvido por NERVIA Tecnologia da Informação</div>
+  </div>
+</div>
+
+<script>
+// ===== LOCK =====
+(function(){
+  const HASH='f17d5000e93b0ae15b772a9851eeb6f94c6b5200b93e1367b1672e830f440bbf';
+  const lockEl=document.getElementById('lock-screen');
+  const appEl=document.getElementById('app');
+  async function sha256(str){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function unlock(){lockEl.style.display='none';appEl.style.display='block';init();}
+  if(sessionStorage.getItem('linum_vend_auth')==='1'){unlock();}
+  window.checkPwd=async function(){
+    const v=document.getElementById('lock-pwd').value;
+    const h=await sha256(v);
+    if(h===HASH){sessionStorage.setItem('linum_vend_auth','1');unlock();}
+    else{
+      const e=document.getElementById('lock-err');
+      e.textContent='Senha incorreta.';
+      document.getElementById('lock-pwd').value='';
+      document.getElementById('lock-pwd').focus();
+      setTimeout(()=>{e.textContent='';},3000);
+    }
+  };
+})();
+
+// ===== DADOS =====
+// Formato reduzido, SEM custo e SEM valor agregado: [ref,peca,tipo,lojaCode,vv,[[cor,tam,qtd],...]]
+// vv = valor de venda unitário (preço de venda da peça). Não há nenhum campo de custo ou de
+// valor total da empresa neste arquivo — apenas o necessário para a vendedora consultar e vender.
+const ESTOQUE_RAW=[["B20","Vestido Chemisier Light","Vestido","G",1579,[[null,"P",2],[null,"M",2],[null,"G",1],[null,"GG",1],["Azul","P",1],["Azul","M",1],["Azul","G",1],["Branca","GG",1],["Branca","M",1]]],["A43","Bata Patê","Bata","G",769,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1]]],["A29","Calça Master","Calça","G",999,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"XGG",1],["Preta","G",1],["Preta","GG",1],["Mostarda","P",1],["Mostarda","M",1],["Mostarda","G",1],["Branca","P",2],["Branca","G",1],["Preta","P",1],["Branca","M",1],["Cru","M",2],["Cru","G",2],["Marinho","P",1],["Marinho","G",1],["Marinho","GG",2],["Cru","P",1],["Cru","GG",1],["Marron","M",1],["Marron","G",1],["Marron","P",1],["Verde","GGG",1],["Marron","GG",1]]],["B16","Vestido Bicolor","Vestido","G",1299,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1],["Caqui/Marrom","P",1],["Caqui/Marrom","M",1],["Caqui/Marrom","G",1],["Caqui/Marrom","GG",1],["Caqui/Verde Musgo","P",1],["Caqui/Verde Musgo","M",1],["Caqui/Verde Musgo","G",1],["Caqui/Verde Musgo","GG",1]]],["A61","BLUSA  QUADRADA MARCELLE","Blusa","G",749,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1],["Manteiga","G",1],["Manteiga","P",1],["Branco","P",1],["Branco","M",1],["Branco","G",1],["Branco","GG",1],["Amarelo","P",1],["Amarelo","M",1],["Amarelo","GG",1]]],["A40","Blusa de Malha","Blusa","G",499,[[null,"P",1],[null,"M",1],[null,"G",1],["Marinho","GGG",1],["Caramelo","P",2],["Caramelo","M",1],["Caramelo","G",1]]],[null,"Vestido Infantil Batik","Vestido","G",null,[[null,"10 anos",1]]],[null,"Blusa Básica","Blusa","G",null,[["Marinho","P",2],["Marinho","G",1]]],["A38","Vestido Isabela","Vestido","G",1399,[["Azul Marjoreli","P",0],["Azul Marjoreli","M",2],["Azul Marjoreli","G",1],["Azul Marjoreli","GG",1],["Marrom","M",1],["Marrom","P",1],["Marrom","G",1],["Marrom","GG",1]]],["A47","Vestido Amanda V","Vestido","G",1199,[["Listrada","P",0],["Listrada","M",1],["Listrada","G",1],["Listrada","GG",0],["Caramelo","M",1],["Cru","M",1],["Cru","G",1],["Natural","P",1],["Natural","M",1],["Natural","G",1],["Natural","GG",1],["Mescla","M",2],["Bordô","GGG",1]]],[null,"Vestido quadrados","Vestido","G",null,[["Branco","P",1],["Branco","M",1],["Branco","G",1],["Branco","GG",1]]],[null,"Vestido Still","Vestido","G",null,[["Marion","P",0],["Marion","M",0],["Marion","G",1],["Marion","GG",0]]],[null,"Echarpe Colors","Echarpe","G",null,[[null,"U",1]]],["A12","BLUSA CHEMISE","Blusa","G",1099,[["Lua","P",0],["Lua","M",1],["Lua","G",0],["Lua","GG",0],["Manteiga","PP",1],[null,"PP",1],[null,"G",3],["Branca","PP",1],["Branca","P",1],["Branca/Marinho","GG",1],["Branca/Marinho","P",1],["Verde degradê","M",2],["Verde degradê","P",1],["Verde","G",1],["Amarelo","U",2],["Rosa","P",1],["Rosa","M",1],["Rosa","G",1],["Amarelo","M",2],["Amarelo","G",1],["Amarelo","GG",1],["Azul marinho","G",1],["Azul marinho","GG",1],["Cinza","PP",1],["Cinza","M",1],["Cinza","G",1]]],[null,"Echarpe","Echarpe","G",null,[["Lilás","U",1],["Marinho\\Bordô","U",1],["Mar","U",1],["Verde","U",1],["Escorrido","U",1],["Natural lisa","U",2],["Colors","U",1],["Amarela","U",1],["Verde escura","U",1],["Mostarda","U",1]]],[null,"Blusa Ipanema bordada a mão (coqueiro)","Blusa","G",null,[["Caramelo","P",1],["Caramelo","M",1],["Caramelo","G",1],["Caramelo","GG",1]]],[null,"Regata Valery bordada a mão (coqueiro)","Regata","G",null,[[null,"P",1],[null,"M",0],[null,"G",2],[null,"GG",0]]],[null,"Jaqueta bordado a mão","Jaqueta","G",null,[["Cru","P",0],["Cru","M",1],["Cru","G",0],["Cru","GG",0]]],[null,"Blusa chemise bordada (coqueiro)","Blusa","G",null,[["Cru","P",0],["Cru","M",0],["Cru","G",0],["Cru","GG",1]]],["M04","malha listra algodão","Malha","G",569,[[null,"P",1],[null,"M",5],[null,"G",3],[null,"GG",2],["Preta","G",3],["Preto","P",1],["Preto","M",1],["Preto","G",1],["Vinho","P",1],["Vinho","M",1]]],[null,"Blusa Masculina bordada a mão (coqueiro)","Blusa","G",null,[["Cru","P",0],["Cru","M",1],["Cru","G",0],["Cru","GG",0]]],[null,"Vestido Gola Bordado","Vestido","G",null,[["Cru","P",0],["Cru","M",1],["Cru","G",0],["Cru","GG",0]]],[null,"Colar Cris Bahia Peixe","Colar","G",null,[["Cru","U",1]]],[null,"Echarpe 100% gaze","Echarpe","G",null,[["Musgo","U",1]]],["A69","Blusa Gola Alta Botões","Blusa","G",1499,[["Branca","M",1],["Verde","GG",1],["Verde","G",1],["Verde","M",1],[null,"M",1],[null,"G",1],[null,"GG",1],["Verde","P",1],["Mostarda","G",1],["Mostarda","GG",1]]],[null,"Conjunto manteiga","Conjunto","G",null,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1]]],["M03","Batik","Batik","G",null,[["Marinho","M",1],["Marinho","GG",2],["Marinho","P",1],["Preta","GG",2],["Off White","GG",1],["Off White","M",3],["Caqui","G",3],["Caqui","GG",2],["Caqui","P",2],["Caqui","M",2],["Azul","P",1],["Azul","M",1],["Azul","GG",2],["Vinho","M",1],["Vinho","GG",1],["Preta","M",1]]],[null,"Malha tricot","Malha","G",null,[[null,"P",1],[null,"M",1],[null,"G",1]]],[null,"Bata Rachel","Bata","G",null,[["Bordeaux","M",1],["Bordeaux","G",1],["Verde","M",1],["Vinho","M",1],["Vinho","G",1]]],[null,"Vestido chemisier M/C (Pintura Gávea)","Vestido","G",null,[[null,"M",0]]],[null,"Saia Transpassada","Saia","G",null,[["Branca","M",1]]],[null,"Vestido Ingrid","Vestido","G",null,[["Listra Color","P",1],["Listra Color","M",1],["Listra Color","G",1],["Listra Color","GG",1],["Mescla","P",1],["Mescla","M",1],["Mescla","G",1],["Mescla","GG",1]]],["A02","Calça Pantacourt linho","Calça","G",799,[["Preto","GG",1],["Preto","GGG",1],["Branco","GGG",1],["Marron","GG",1],["Preta","GGG",2],["Verde","GG",1],["Verde","M",1],["Verde","G",1]]],[null,"Calça Ballon","Calça","G",null,[["Natural","G",1],["Off White","GG",1],["Off White","M",1]]],[null,"Vestido Quadrados","Vestido","G",null,[["Branco","G",1]]],[null,"Vestido Infantil Manoela","Vestido","G",null,[["Cru","6",1]]],["B34","Vestido Inez","Vestido","G",1399,[[null,"M",1],[null,"G",1],[null,"GG",2],["Vermelho","P",1],["Vermelho","M",1],["Vermelho","G",1],["Vermelho","GG",1],["Marrom","G",1],["Marrom","M",1],["Marrom","GG",1],["Preto","P",1],["Preto","M",1]]],["B08 ","Vestido recortes","Vestido","G",null,[["Verde","M",1],["Verde","G",1],["Off White","M",1],["Off White","G",1]]],[null,"Vestido Lapper","Vestido","G",null,[["Caqui","M",1],["Caqui","GG",1],["Caramelo","M",1],["Verde","PP",1],["Verde","P",1],["Verde","M",1],["Verde","G",1],["Verde","GG",1],["Branco","PP",2],["Branco","P",1],["Branco","M",1],["Branco","G",1],["Mescla","PP",1],["Mescla","P",1],["Mescla","GG",1]]],[null,"Jardineira","Jardineira","G",null,[["Manteiga","PP",1],["Manteiga","P",1],["Manteiga","M",1],["Manteiga","G",1],["Manteiga","GG",1],["Marinho","GG",1]]],["B09","Vestido SOLAR","Vestido","G",1399,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1]]],["B12","Bata Solar","Bata","G",839,[["Cru","P",1],["Cru","M",1],["Cru","G",1],[null,"P",1],[null,"M",1],[null,"GG",2],["Rosa","M",1],["Rosa","G",1],["Rosa","GG",1]]],["M","Blusa Malha","Blusa","G",null,[[null,"P",1],[null,"M",2],[null,"G",1],["Mescla","P",2],["Mescla","GG",1]]],["B33","Vestido Oversize","Vestido","G",1499,[[null,"U",1],["Bordeaux","U",1]]],["B59","Vestido","Vestido","G",1459,[["Azul","G",1],["Azul","GG",1],["Azul","M",1],["Azul","P",1],["Mostarda","P",2],["Mostarda","G",1],["Mostarda","GG",1]]],["A06","Macacão Basico","Macacão","G",1299,[["Cru","P",1],["Cru","M",1],["Cru","G",1],["Branco","G",1]]],["A54","MAXI CAMISA","Camisa","G",1439,[["Branco","P",2],["Branco","M",1],["Branco","GG",1],["Preto","M",1],["Preto","G",1],["Preto","GG",1]]],[null,"Macacão Novo","Macacão","G",null,[["Branco","M",1],["Branco","G",1],["Branco","GG",1],["Cru","P",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1]]],[null,"Vestido de linho decote Quadrado","Vestido","G",null,[["Marinho","P",1],["Marinho","M",1],["Marinho","G",1],["Marinho","GG",2],["Vermelho","P",0],["Vermelho","M",0],["Vermelho","G",1],["Azul","P",1],["Azul","M",1],["Azul","G",1],["Azul","GG",1]]],["B30","Vestido KAFTAN","Vestido","G",1399,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",2],["Verde Musgo","P",1],["Verde Musgo","M",1],["Verde Musgo","GG",1],["Branca","M",1],["Branca","GG",1],["Telha","M",1],["Telha","G",1],["Terracota","G",1]]],[null,"Vestido 2 cores","Vestido","G",null,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"XGG",1]]],[null,"Blusa Malha Batik","Blusa","G",null,[["Marinho","U",1]]],[null,"Echarpe degradê","Echarpe","G",null,[["Caramelo","U",1],["Bordeaux","U",1]]],["A?","Vestido Chemise M/C","Vestido","G",1199,[["Cru","P",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1],["Branco","P",1],["Branco","M",1],["Branco","G",1],["Branco","GG",1]]],["B37","Pantalona Oscar","Pantalona","G",1199,[[null,"M",1],[null,"G",1],[null,"GG",1],["Off White","P",1],["Off White","M",1],["Off White","GG",1]]],["M02","Blusa Malha Batik Artesanal","Blusa","G",null,[["Marinho","G",2],["Marinho","P",1],["Marinho","M",1]]],["A62","MAXI CAMISA","Camisa","G",1049,[["Branca","P",1],["Branca","M",1],["Preto","M",1],["Preto","P",1]]],["A","Macacão Novo","Macacão","G",null,[["Marinho","P",1],["Marinho","G",1],["Marinho","M",1],["Marinho","GG",1]]],["A13","Bata","Bata","G",619,[[null,"M",1],[null,"P",1],[null,"G",1],[null,"GG",1],["Preta","GGG",1],["Amarelo ouro","GGG",1],["Azul marinho","GGG",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1],["Amarela","XGG",1]]],[null,"Blusa Marcia","Blusa","G",null,[["Cru","P",1],["Cru","G",2],["Cru","M",2],["Cru","GG",1]]],["B21","Blusa Souto Maior","Blusa","G",599,[["Azul","M",2],["Azul","G",1],["Azul","P",3],["Azul","GG",1],["Cinza","P",1],["Cinza","M",1],["Cinza","GG",1]]],["B15","blusa Pate romantica","Blusa","G",989,[[null,"M",1],[null,"G",1],[null,"GG",1]]],[null,"Bata U","Bata","G",null,[[null,"U",1]]],["B05","Bata Rachel","Bata","G",749,[[null,"P",1],[null,"M",1],[null,"G",1],["Manteiga","G",1],["Manteiga","GG",1],["Verde","M",1],["Verde","G",1],["Verde","GG",1]]],[null,"Blusa sunflower","Blusa","G",null,[[null,"P",1],[null,"M",1],[null,"G",1],[null,"GG",1]]],["A71","Macacão Novo","Macacão","G",1499,[["Cru","P",1],["Cru","M",1],["Cru","G",2],["Mostarda","G",1],["Mostarda","GG",1]]],[null,"Blusa Pate M/Curta","Blusa","G",null,[["Manteiga","P",1],["Manteiga","M",1],["Manteiga","G",1],["Manteiga","GG",1],["Caramelo","P",1],["Caramelo","M",1],["Caramelo","G",1],["Caramelo","GG",1],["Verde","P",1],["Verde","M",1],["Verde","G",1]]],["B19","Blusa Cris","Blusa","G",989,[["Branca","M",1],["Branca","P",1],["Branca","G",1],["Caqui","P",1],["Caqui","M",1],["Caqui","G",1],["Caqui","GG",1]]],["A52","Colete","Colete","G",769,[["Preto","P",1],["Preto","M",1],["Preto","G",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1]]],["B36","Vestido Oversize Cotts","Vestido","G",1459,[["Preto","G",1],["Preto","GG",1],["Preta","U",1],["Marrom","GG",1],["Marrom","G",1]]],["B26","Bata V Botões Felicidade","Bata","G",889,[["Marinho","P",1],["Marrom","P",1],["Marrom","M",1],["Marrom","G",1],["Branca","P",1],["Branca","G",1],["Branca","M",1]]],[null,"Vestido YVes","Vestido","G",null,[["Preto","U",1]]],[null,"Jaqueta L Bordado Sol","Jaqueta","G",null,[["Cru","U",1]]],["M08","Blusa Malha V","Blusa","G",null,[["Marinho","M",2],["Marinho","G",1],["Marinho","P",2]]],[null,"Blusa Malha","Blusa","G",null,[["Mescla","M",1]]],[null,"Bata V. Felicidade","Bata","G",null,[["Marinho","P",1],["Marinho","M",1],["Marinho","GG",1],["Mescla","P",1],["Mescla","GG",1]]],[null,"Jaqueta cru bordada Sol","Jaqueta","G",null,[["Cru","P",2],["Marinho","M",2],["Marinho","GG",1],["Marinho","G",1]]],[null,"Blusa sunflower bordada","Blusa","G",null,[["Branca/Marinho","G",1],["P branca c/ bordado Mar/Br","P",1]]],["A23","Maxi Bermuda","Bermuda","G",999,[["Vinho","G",1],["Preta","P",1],["Preta","M",1],["Preta","G",1],["Preta","GG",1],["Preta","XGG",1],["Preta","XGGG",1],["Cru","M",1],["Branca","P",1],["Branca","M",2],["Cru","XGG",1],["Branca","GG",2],["Branca","XGG",1],["Branca","XGGG",2]]],[null,"Regata sun flower","Regata","G",null,[["Cru","P",2],["Cru","M",1],["Cru","PP",1]]],[null,"Bermuda básica","Bermuda","G",null,[["Branca","P",1],["Branca","M",1],["Branca","GG",1],["Branca","G",1],["Marinho","M",1],["Marinho","G",1],["Marinho","GG",1],["Cru","M",1]]],["A25","Vestido decote V","Vestido","G",1399,[["Verde degradê","M",1],["Verde degradê","G",1],["Verde degradê","GG",1],["Verde","P",1],["Escorrido","GGG",1],["Batik Colors","GG",1],[null,"GG",1]]],[null,"Calça transpasada","Calça","G",null,[["Rosa","G",1]]],["B02","Regata Verão","Regata","G",669,[["Branca","P",1],["Preta","GG",1],[null,"P",1],[null,"G",1],[null,"GG",1],["Mostarda","P",1],["Mostarda","GG",1],["Verde","M",1],["Verde","G",1],["Verde","GG",1],["Telha","G",1],["Telha","GG",1],["Telha","M",1]]],["B03","Regata VALERY","Regata","G",689,[["Branca","GG",2],["Branca","G",1],["Mostarda","M",1],["Preta","M",1],["Preta","G",1]]],["B07","Blusa m/c v Ipanema","Blusa","G",1199,[[null,"M",1],["Azul Marinho","P",1],["Azul Marinho","M",1],["Azul Marinho","G",1],["Azul Marinho","GG",1]]],[null,"Colar Cris Bahia Ouro Velho","Colar","G",null,[[null,"U",2]]],[null,"Colar Nádia Búzios turquesa com pedras","Colar","G",null,[[null,"U",1]]],[null,"Colar Nádia turquesa com 3 placas de prata","Colar","G",null,[[null,"U",1]]],[null,"Camisão sobretudo pintura coqueiros","Sobretudo","G",null,[[null,"P",1]]],[null,"Saia Básica","Saia","G",null,[["Vinho Bordeaux","GG",1]]],[null,"Bata Pala","Bata","G",null,[["Verde degradê","G",1]]],[null,"Calça Sarja","Calça","G",null,[["Caqui","G",2],["Caqui","M",1],["Marinho","M",1],["Marinho","P",1],["Marinho","G",1],["Marinho","GG",1]]],["A42","Bermuda de Sarja","Bermuda","G",599,[["Marinho","P",1],["Marinho","M",1],["Marinho","G",2],["Marinho","GG",2],["Caqui","P",1],["Caqui","M",1],["Caqui","G",1],["Caqui","XGG",1]]],["B04","Bata PRAIA","Bata","G",1299,[["Cru","M",1],["Cru","G",1]]],[null,"Bermuda Básica Natural","Bermuda","G",null,[["Cru","M",1],["Cru","G",1]]],[null,"Echarpe Gaze/Linho listra","Echarpe","G",null,[["Azul/Cru","U",1]]],[null,"Echarpe Cambraia/Linho listra","Echarpe","G",null,[["Azul/Cru","U",1]]],["B38","Casaco oversize","Casaco","G",1399,[["Verde Musgo","U",1]]],[null,"Blusa Transpassada","Blusa","G",null,[["Cru","M",1],["Cru","GG",1],["Cru","G",1],["Cru","P",1],["Rosa","GG",1],["Rosa","P",1],["Rosa","M",1],["Rosa","G",1],["Branca","M",1],["Branca","P",1],["Branca","G",1],["Branca","GG",1]]],["B45","Saia  basica","Saia","G",1099,[["Cru","M",2],["Cru","P",1],["Cru","G",1],["Branco","GG",2],["Branco","M",1],["Branco","P",1],["Branco","G",1]]],[null,"Saia transpassada","Saia","G",null,[["Manteiga","M",1]]],["A70","Bata Capuz","Bata","G",869,[["Cru","P",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1],["Branca","M",1],["Branca","G",1],["Branca","GG",1]]],[null,"Bata Mari Cadarço","Bata","G",null,[["Marinho","P",1],["Marinho","GG",1],["Marinho","G",1],["Verde Musgo","P",1],["Verde Musgo","M",1],["Verde Musgo","G",1],["Verde Musgo","GG",1],["Branco","P",1]]],[null,"Bata Amal","Bata","G",null,[["Branco","P",1],["Branco","M",1],["Branco","G",1]]],["B31","Vestido Regata sumer 25","Vestido","G",1099,[["Rosa","P",1],["Rosa","M",1],["Rosa","GG",1]]],["A24","Vestido Fashion","Vestido","G",1499,[["Manteiga","M",1],["Manteiga","G",1],["Verde Degradê","XGG",1],[null,"G",1],[null,"XGG",1]]],[null,"Vestido duas cores","Vestido","G",null,[["Marinho/Branco","G",1],["Branco/Cru","M",1],["Branco/Cru","G",1],["Branco/Cru","GG",1],["Branco/Cru","XGG",1]]],["A46","Bata U","Bata","G",749,[["Verde","GG",1]]],[null,"Bata Sue","Bata","G",null,[["Cru","U",1]]],[null,"Calça Baloon","Calça","G",null,[["Cru","U",1]]],[null,"Camisão sobretudo","Sobretudo","G",null,[["Preto","G",1]]],["A50","Bata de Nervuras V","Bata","G",779,[["Marinho","P",1],["Marinho","GG",1]]],["B10","Blusa tardezinha","Blusa","G",729,[["Branca","P",1],["Branca","M",1],["Branca","G",1],["Branca","GG",1],["Verde","M",2],["Verde","G",1]]],[null,"Blusa Sun flower","Blusa","G",null,[["Amarelo","M",1],["Amarelo","P",1]]],[null,"Saia Básico linho","Saia","G",null,[["Rosa","M",1],["Rosa","G",1],["Rosa","GG",1]]],["B06","Vestido REGATA IPANEMA","Vestido","G",1399,[["Cru","P",1],["Cru","M",1],["Cru","G",1],["Azul Marinho","M",1],["Azul Marinho","G",1],["Azul Marinho","GG",1]]],[null,"Vestido decote quadrado","Vestido","G",null,[["Vinho","G",1],["Vinho","GG",1]]],["A16","Bata Cadarço","Bata","G",null,[["Amarela","P",1],["Amarela","M",1],["Amarela","G",1],["Amarela","GG",1],["Marinho","GG",2],["Marinho","P",1],["Marinho","M",1],["Marinho","G",1]]],["A51","kimono curto","Kimono","G",829,[["Off White","U",1],["Preto","U",1],["Telha","U",2]]],[null,"Regata Pontas Recorte Enviesado","Regata","G",null,[["Off White","P",1],["Off White","M",1],["Off White","G",1],["Off White","GG",1]]],["B14","PARKA IPANEMA","Parka","G",1099,[["Azul Marinho","P",1],["Azul Marinho","M",1],["Azul Marinho","G",1],["Preta","P",1],["Preta","M",1],["Preta","G",1],["Preta","GG",1]]],[null,"Regata Pontas Recorte Enviesada","Regata","G",null,[["Marinho","P",1],["Marinho","G",1],["Marinho","M",1]]],["A33","Blusa Marcia Souto","Blusa","G",699,[["Azul Marinho","P",1],["Azul Marinho","M",1],["Azul Marinho","G",1],["Azul Marinho","GG",1],["Verde","P",1],["Verde","M",1],["Verde","G",1]]],["A45","Vestido Regata","Vestido","G",1199,[["Marinho","M",1],["Marinho","G",1]]],["A11","Calça Pantalona","Calça","G",1099,[["Preta","P",1],["Preta","M",1],["Preta","G",1],["Preta","GG",1],["Branca","M",1],["Branca","P",2],["Branca","G",1],["Branca","GG",1],["Cru","G",1],["Cru","P",2],["Marinho","G",1],["Marinho","GG",1],["Marinho","P",1],["Marinho","PP",1]]],["A19","Sobretudo","Sobretudo","G",899,[["Cru","M",2]]],["B25","Calça Master","Calça","G",null,[["Mescla","P",1],["Mescla","M",1],["Mescla","G",1],["Mescla","GGG",1],["Marrom","P",1],["Marrom","M",1],["Marrom","G",1],["Marrom","GG",1],["Preta","P",1],["Preta","M",1],["Preta","G",1],["Preta","GG",1]]],[null,"Calça Balloon","Calça","G",null,[["Branco","G",1],["Branco","M",1],["Branco","PP",1],["Branco","P",1],["Cru","P",1]]],[null,"Calça transpassada","Calça","G",null,[["Marinho","GG",1],["Marinho","G",1],["Marinho","M",1],["Marinho","P",1],["Branco","P",1],["Branco","M",1],["Branco","G",1],["Branco","GG",1]]],["A58","Calça Alfaiataria","Calça","G",899,[[null,"G",1],[null,"P",1],[null,"M",1],[null,"GG",1]]],[null,"Macacão Amanda Sem manga","Macacão","G",null,[["Cru","M",1],["Cru","G",1],["Cru","GG",1],["Cru","P",1]]],[null,"Vestido Amanda","Vestido","G",null,[["Mescla","G",1]]],[null,"Vestido Bolso","Vestido","G",null,[["Mescla","GG",1],["Mescla","P",1],["Mescla","G",2]]],[null,"Malha decote V","Malha","G",null,[["Vinho","P",1],["Vinho","M",1],["Vinho","GG",1]]],["A48","Calça Marcelo","Calça","G",869,[["Marinho","GG",1]]],[null,"Echarpe Arte","Echarpe","G",null,[["Laranja","U",1],["Preta escorrida","U",1]]],["A63","Jaqueta","Jaqueta","G",1299,[["Marrom","P",2],["Marrom","G",1],["Preto","M",1],["Marrom","M",1],["Preta","G",1],["Branca","P",1],["Branca","M",1],["Branca","G",1],["Branca","GG",1],[null,"G",1]]],[null,"Jaqueta (lisa)","Jaqueta","G",null,[["Crua","GG",1],["Crua","G",1]]],[null,"(peça tie dye)","Peça","G",null,[["Tie dye","U",1]]],["A07","Bata manga 3/4","Bata","G",719,[["Preta","GGG",1],["Azul Marinho","XG",1]]],["A59","BLUSA  AMPLA","Blusa","G",829,[["Preta","U",1]]],[null,"Saia enviesada","Saia","G",null,[["Marinho","M",1],["Marinho","G",2],["Marinho","GG",1],["Preta","P",2],["Preta","G",1],["Preta","GG",1]]],[null,"Bata gaze","Bata","G",null,[["Colors","G",1]]],[null,"Echarpe gaze de linho","Echarpe","G",null,[["Crua","U",2]]],[null,"Blusa Zar","Blusa","G",null,[["Cru","P",1],["Cru","M",1],["Cru","G",1],["Cru","GG",1],["Azul marinho","P",1],["Azul marinho","M",1],["Azul marinho","GG",1],["Azul marinho","G",1],["Bordô","P",1]]],["B13","Blusa manga curta light","Blusa","G",729,[["Colors","M",1],[null,"M",1]]],[null,"Regata Valery","Regata","G",null,[["7 cores","GG",1]]],[null,"Max Blazer","Blazer","G",null,[["Branca","U",1]]],[null,"Vestido oversize (lotts)","Vestido","G",null,[["Telha","U",1]]],[null,"Blusa malha recortes","Blusa","G",null,[["Cinza","M",1],["Natural estampada","P",1]]],[null,"Vestido Chemise Charme","Vestido","G",null,[["Mescla","G",1],["Mescla","GG",1]]],[null,"Bata Básica Artesanal","Bata","G",null,[[null,"M",1]]],["B18","Calça Transpasada","Calça","G",1199,[["Mescla","M",1],["Mescla","G",1],["Mescla","GG",1]]],[null,"Calça Alfaiataria","Calça","G",null,[["Marinho","P",1],["Marinho","M",1],["Marinho","G",1],["Marinho","GG",1]]],[null,"Saia básica","Saia","G",null,[["Crua","XGG",1]]],[null,"Vestido Lapper Branco","Vestido","G",null,[["Branco","P",1]]],[null,"Calça Marcel","Calça","G",null,[["Cru","GG",1],["Cru","M",1],["Cru","G",1]]],[null,"Parka","Parka","G",null,[["Preta","GG",1]]],["A14","Vestido Yves","Vestido","G",null,[["Cinza","GG",1],["Preta","P",1]]],[null,"Macacão novo","Macacão","G",null,[["Cru","M",1]]],["B11","Vestido Chemise charme","Vestido","G",1499,[["Mescla cinza","M",1]]],["A35","Saia","Saia","G",869,[["Cru","GG",1]]],["B","Vestido branco","Vestido","G",null,[["Crú","U",2],["Preto","U",1],["Preta","P",1],["Preta","M",1],["Preta","G",1],["Preta","GG",1],["Branco","M",1],["Branco","G",1]]],[null,"Blusa","Blusa","G",null,[["Bordô","G",1],["Bordô","M",1],["Bordô","GG",1]]],[null,"Pantacou","Pantacou","G",null,[["Cru","GGG",2]]],[null,"Colar Nadia Fitilhos","Colar","G",null,[[null,"U",1]]],[null,"Colar Nádia couro/prata","Colar","G",null,[[null,"U",1]]],[null,"Echarpe art lar","Echarpe","G",null,[[null,"U",1]]],[null,"Vestido branco","Vestido","G",null,[["Branco","GG",1]]],["A57","Vestido Rachel","Vestido","G",1379,[["Caramelo","PP",1],["Caramelo","M",1],["Caramelo","G",1],["Caramelo","GG",1]]],[null,"Bata Nadja","Bata","G",null,[["Off White","P",1]]],[null,"Bata Basica Artesanal Gaze de Linho","Bata","G",null,[[null,"G",1]]],[null,"(sem nome)","Sem","G",null,[[null,null,0]]]];
+
+const PRODUTOS=ESTOQUE_RAW.map(a=>({ref:a[0],peca:a[1],tipo:a[2],loja:a[3]==='G'?'Gávea':'Ipanema',vv:a[4],variacoes:a[5].map(v=>({cor:v[0],tam:v[1],qtd:v[2]}))}));
+const ORDEM_TAM=['PP','P','M','G','GG','GGG','XGG','XGGG','U'];
+
+function fmt(v){return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function popularFiltros(){
+  const lojas=new Set(), cores=new Set(), tams=new Set();
+  PRODUTOS.forEach(p=>{lojas.add(p.loja);p.variacoes.forEach(v=>{cores.add(v.cor||'Não especificada');tams.add(v.tam||'N/D');});});
+  const selLoja=document.getElementById('f-loja');
+  [...lojas].sort().forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;selLoja.appendChild(o);});
+  const selCor=document.getElementById('f-cor');
+  [...cores].sort((a,b)=>a.localeCompare(b)).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;selCor.appendChild(o);});
+  const selTam=document.getElementById('f-tam');
+  [...tams].sort((a,b)=>{const ia=ORDEM_TAM.indexOf(a),ib=ORDEM_TAM.indexOf(b);
+    if(ia>=0&&ib>=0)return ia-ib; if(ia>=0)return -1; if(ib>=0)return 1; return a.localeCompare(b);
+  }).forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;selTam.appendChild(o);});
+}
+
+function filtrar(){
+  const F={
+    busca: document.getElementById('f-busca').value.trim().toLowerCase(),
+    loja: document.getElementById('f-loja').value,
+    cor: document.getElementById('f-cor').value,
+    tam: document.getElementById('f-tam').value,
+    soDisp: document.getElementById('f-disp').checked
+  };
+  return PRODUTOS.map(p=>{
+    if(F.loja&&p.loja!==F.loja)return null;
+    if(F.busca&&!((p.ref||'')+' '+p.peca+' '+p.tipo).toLowerCase().includes(F.busca))return null;
+    let vars=p.variacoes;
+    if(F.cor)vars=vars.filter(v=>(v.cor||'Não especificada')===F.cor);
+    if(F.tam)vars=vars.filter(v=>(v.tam||'N/D')===F.tam);
+    if(F.soDisp)vars=vars.filter(v=>v.qtd>0);
+    if(!vars.length)return null;
+    return Object.assign({},p,{variacoes:vars});
+  }).filter(Boolean).sort((a,b)=>a.peca.localeCompare(b.peca));
+}
+
+function render(){
+  const dados=filtrar();
+  document.getElementById('results-count').textContent=dados.length+' produto(s) encontrado(s)';
+  const cont=document.getElementById('results');
+  cont.innerHTML='';
+  if(!dados.length){
+    cont.innerHTML='<div class="empty-state"><span class="e-icon">🔍</span>Nenhum produto encontrado com esses filtros.</div>';
+    return;
+  }
+  dados.forEach(p=>{
+    const card=document.createElement('div');
+    card.className='prod-card';
+    const vars=p.variacoes.slice().sort((a,b)=>{
+      const ca=(a.cor||'').localeCompare(b.cor||'');
+      if(ca!==0)return ca;
+      const ia=ORDEM_TAM.indexOf(a.tam),ib=ORDEM_TAM.indexOf(b.tam);
+      if(ia>=0&&ib>=0)return ia-ib; if(ia>=0)return -1; if(ib>=0)return 1;
+      return (a.tam||'').localeCompare(b.tam||'');
+    });
+    const chips=vars.map(v=>{
+      const ok=v.qtd>0;
+      return '<div class="chip '+(ok?'ok':'zero')+'">'+
+        '<span class="chip-cor">'+(v.cor||'Não especificada')+'</span>'+
+        '<span class="chip-tam">'+(v.tam||'N/D')+'</span>'+
+        '<span class="chip-qtd">'+(ok?v.qtd+' un.':'Esgotado')+'</span></div>';
+    }).join('');
+    card.innerHTML=
+      '<div class="prod-top">'+
+        '<div class="prod-name">'+p.peca+'</div>'+
+        '<div class="'+(p.vv!=null?'prod-price':'prod-price np')+'">'+(p.vv!=null?fmt(p.vv):'Preço não cadastrado')+'</div>'+
+      '</div>'+
+      '<div class="prod-meta">Ref: '+(p.ref||'—')+' · Peça: '+p.tipo+' · <span class="badge '+(p.loja==='Gávea'?'gv':'ip')+'">'+p.loja+'</span></div>'+
+      '<div class="chips">'+chips+'</div>';
+    cont.appendChild(card);
+  });
+}
+
+function init(){
+  popularFiltros();
+  render();
+  ['f-loja','f-cor','f-tam','f-disp'].forEach(id=>document.getElementById(id).addEventListener('change',render));
+  document.getElementById('f-busca').addEventListener('input',render);
+}
+</script>
+
+</body>
+</html>
