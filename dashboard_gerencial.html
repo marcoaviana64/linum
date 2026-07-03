@@ -159,6 +159,7 @@ tr:hover td{background:#fafafa}
   <div class="tab" onclick="showPage('lancamentos',this)">📋 Lançamentos</div>
   <div class="tab" onclick="showPage('consideracoes',this)">💡 Considerações</div>
   <div class="tab" onclick="showPage('vendas',this)">📈 Análise de Vendas</div>
+  <div class="tab" onclick="showPage('rede',this)">💳 Taxas Rede</div>
   <div class="tab" onclick="showPage('estoque',this)">📦 Estoque</div>
 </div>
 
@@ -1252,12 +1253,14 @@ function showPage(p,el){
   lancFiltros.forEach(id=>document.getElementById(id).style.display=p==='lancamentos'?'flex':'none');
   const finFiltros=['fc-ano','fc-mes','fc-conta'];
   finFiltros.forEach(id=>document.getElementById(id).style.display=p==='estoque'?'none':'flex');
+  if(p==='rede') document.getElementById('fc-conta').style.display='none';
   const estFiltros=['fc-loja','fc-tipopeca','fc-cor','fc-tamanho','fc-estbusca'];
   estFiltros.forEach(id=>document.getElementById(id).style.display=p==='estoque'?'flex':'none');
   if(p==='geral') renderGeral();
   else if(p==='categorias') renderCategorias();
   else if(p==='lancamentos') renderLancamentos();
   else if(p==='vendas') renderVendas();
+  else if(p==='rede') renderRede();
   else if(p==='estoque') renderEstoque();
 }
 
@@ -2127,6 +2130,242 @@ function renderVendas(){
               x:{ticks:{maxTicksLimit:20,maxRotation:45}}}}});
 }
 </script>
+
+<!-- VENDAS REDE (taxas e cartões) -->
+<div class="page" id="page-rede">
+  <div class="container">
+
+    <div class="v-kpi-row" id="rede-kpis"></div>
+
+    <div class="alert-note">
+      💳 Análise construída a partir do relatório de vendas exportado da maquininha Rede. Mostra o custo real das taxas (MDR + antecipação), o mix de bandeiras/modalidades e o efeito do parcelamento no valor líquido recebido.
+    </div>
+
+    <!-- Bandeira e modalidade -->
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">💳 Volume de Vendas por Bandeira</div>
+        <div class="chart-wrap"><canvas id="ch-rede-band"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Taxa Média por Bandeira <span class="hint">MDR + antecipação</span></div>
+        <div class="chart-wrap"><canvas id="ch-rede-band-taxa"></canvas></div>
+      </div>
+    </div>
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🔀 Volume por Modalidade <span class="hint">crédito à vista / crédito parcelado / débito</span></div>
+        <div class="chart-wrap"><canvas id="ch-rede-modal"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Taxa Média por Modalidade</div>
+        <div class="chart-wrap"><canvas id="ch-rede-modal-taxa"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Parcelamento -->
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🔢 Vendas por Número de Parcelas</div>
+        <div class="chart-wrap"><canvas id="ch-rede-parc"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 Taxa Efetiva Média por Parcela</div>
+        <div class="chart-wrap"><canvas id="ch-rede-parc-taxa"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Evolução diária / horário -->
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">📅 Vendas por Dia <span class="hint">valor bruto e líquido</span></div>
+        <div class="chart-wrap"><canvas id="ch-rede-dia"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🕐 Vendas por Horário do Dia</div>
+        <div class="chart-wrap"><canvas id="ch-rede-hora"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Tabela detalhada -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📋 Detalhamento das Vendas Rede <span class="hint">período selecionado nos filtros de Ano/Mês</span></div>
+      <div class="tbl-wrap" style="max-height:420px"><table>
+        <thead><tr><th>Data</th><th>Hora</th><th>Bandeira</th><th>Modalidade</th><th>Tipo</th><th class="tc">Parc.</th><th class="tr">Bruto</th><th class="tr">Taxa %</th><th class="tr">Taxas R$</th><th class="tr">Líquido</th><th>Prazo</th></tr></thead>
+        <tbody id="tb-rede"></tbody>
+      </table></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const REDE=[{"dt":"30/06/2026","hr":"12:28:22","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":7,"band":"Mastercard","bruto":2147.0,"mdrPct":2.62,"mdrVal":56.25,"antPct":4.8,"antVal":103.06,"txPct":7.42,"txVal":159.31,"liq":1987.69,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"27/06/2026","hr":"12:26:09","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":3,"band":"Mastercard","bruto":799.0,"mdrPct":2.64,"mdrVal":21.09,"antPct":2.44,"antVal":19.5,"txPct":5.08,"txVal":40.59,"liq":758.41,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"26/06/2026","hr":"05:35:18","estab":"LINUM IPANEMA","modal":"crédito","tipo":"à vista","parc":1,"band":"Visa","bruto":449.0,"mdrPct":1.64,"mdrVal":7.36,"antPct":1.26,"antVal":5.66,"txPct":2.9,"txVal":13.02,"liq":435.98,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"24/06/2026","hr":"05:09:51","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros pre-auto","parc":8,"band":"Visa","bruto":1444.0,"mdrPct":2.62,"mdrVal":37.83,"antPct":5.39,"antVal":77.83,"txPct":8.01,"txVal":115.66,"liq":1328.34,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"19/06/2026","hr":"05:02:46","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":4,"band":"Mastercard","bruto":3497.0,"mdrPct":2.64,"mdrVal":92.32,"antPct":3.03,"antVal":105.96,"txPct":5.67,"txVal":198.28,"liq":3298.72,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"19/06/2026","hr":"04:12:55","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":4,"band":"Mastercard","bruto":1099.0,"mdrPct":2.64,"mdrVal":29.01,"antPct":3.03,"antVal":33.3,"txPct":5.67,"txVal":62.31,"liq":1036.69,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"19/06/2026","hr":"04:11:49","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":3,"band":"Mastercard","bruto":829.0,"mdrPct":2.64,"mdrVal":21.88,"antPct":2.44,"antVal":20.23,"txPct":5.08,"txVal":42.11,"liq":786.89,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"18/06/2026","hr":"02:56:04","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Mastercard","bruto":1536.0,"mdrPct":1.04,"mdrVal":15.97,"antPct":0.0,"antVal":0.0,"txPct":1.04,"txVal":15.97,"liq":1520.03,"prazo":"1  dia útil","am":"2026/06"},{"dt":"18/06/2026","hr":"01:55:45","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Mastercard","bruto":3569.0,"mdrPct":1.04,"mdrVal":37.12,"antPct":0.0,"antVal":0.0,"txPct":1.04,"txVal":37.12,"liq":3531.88,"prazo":"1  dia útil","am":"2026/06"},{"dt":"17/06/2026","hr":"04:25:33","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":5,"band":"Mastercard","bruto":999.0,"mdrPct":2.64,"mdrVal":26.38,"antPct":3.62,"antVal":36.16,"txPct":6.26,"txVal":62.54,"liq":936.46,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"16/06/2026","hr":"12:14:31","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":4,"band":"Mastercard","bruto":1399.0,"mdrPct":2.64,"mdrVal":36.93,"antPct":3.03,"antVal":42.39,"txPct":5.67,"txVal":79.32,"liq":1319.68,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"15/06/2026","hr":"11:53:40","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Visa","bruto":11200.0,"mdrPct":1.04,"mdrVal":116.48,"antPct":0.0,"antVal":0.0,"txPct":1.04,"txVal":116.48,"liq":11083.52,"prazo":"1  dia útil","am":"2026/06"},{"dt":"13/06/2026","hr":"02:05:17","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":2,"band":"Visa","bruto":529.0,"mdrPct":2.64,"mdrVal":13.96,"antPct":1.85,"antVal":9.79,"txPct":4.49,"txVal":23.75,"liq":505.25,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"10/06/2026","hr":"10:50:07","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":5,"band":"Mastercard","bruto":2600.0,"mdrPct":2.64,"mdrVal":68.64,"antPct":3.62,"antVal":94.12,"txPct":6.26,"txVal":162.76,"liq":2437.24,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"09/06/2026","hr":"07:39:46","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":4,"band":"Visa","bruto":1798.0,"mdrPct":2.64,"mdrVal":47.47,"antPct":3.03,"antVal":54.48,"txPct":5.67,"txVal":101.95,"liq":1696.05,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"08/06/2026","hr":"06:31:28","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":2,"band":"Visa","bruto":1798.0,"mdrPct":2.64,"mdrVal":47.47,"antPct":1.85,"antVal":33.26,"txPct":4.49,"txVal":80.73,"liq":1717.27,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"08/06/2026","hr":"06:11:35","estab":"LINUM IPANEMA","modal":"crédito","tipo":"à vista","parc":1,"band":"Visa","bruto":569.0,"mdrPct":1.64,"mdrVal":9.33,"antPct":1.26,"antVal":7.17,"txPct":2.9,"txVal":16.5,"liq":552.5,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"08/06/2026","hr":"06:11:03","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Mastercard","bruto":479.0,"mdrPct":1.04,"mdrVal":4.98,"antPct":0.0,"antVal":0.0,"txPct":1.04,"txVal":4.98,"liq":474.02,"prazo":"1  dia útil","am":"2026/06"},{"dt":"08/06/2026","hr":"04:54:28","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":4,"band":"Visa","bruto":2498.0,"mdrPct":2.64,"mdrVal":65.95,"antPct":3.03,"antVal":75.69,"txPct":5.67,"txVal":141.64,"liq":2356.36,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"08/06/2026","hr":"12:37:02","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":3,"band":"Visa","bruto":798.0,"mdrPct":2.64,"mdrVal":21.07,"antPct":2.44,"antVal":19.47,"txPct":5.08,"txVal":40.54,"liq":757.46,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"06/06/2026","hr":"01:28:41","estab":"LINUM IPANEMA","modal":"crédito","tipo":"à vista","parc":1,"band":"Visa","bruto":629.0,"mdrPct":1.64,"mdrVal":10.31,"antPct":1.26,"antVal":7.93,"txPct":2.9,"txVal":18.24,"liq":610.76,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"04/06/2026","hr":"03:21:59","estab":"LINUM IPANEMA","modal":"crédito","tipo":"parcelado sem juros","parc":2,"band":"Visa","bruto":459.0,"mdrPct":2.64,"mdrVal":12.12,"antPct":1.85,"antVal":8.49,"txPct":4.49,"txVal":20.61,"liq":438.39,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"03/06/2026","hr":"12:24:59","estab":"LINUM IPANEMA","modal":"crédito","tipo":"à vista","parc":1,"band":"Visa","bruto":1019.0,"mdrPct":1.64,"mdrVal":16.71,"antPct":1.26,"antVal":12.84,"txPct":2.9,"txVal":29.55,"liq":989.45,"prazo":"1  dias úteis","am":"2026/06"},{"dt":"01/06/2026","hr":"06:12:15","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Visa","bruto":379.0,"mdrPct":1.04,"mdrVal":3.94,"antPct":0.0,"antVal":0.0,"txPct":1.04,"txVal":3.94,"liq":375.06,"prazo":"1  dia útil","am":"2026/06"},{"dt":"01/06/2026","hr":"02:09:19","estab":"LINUM IPANEMA","modal":"débito","tipo":"à vista","parc":1,"band":"Elo","bruto":300.0,"mdrPct":1.84,"mdrVal":5.52,"antPct":0.0,"antVal":0.0,"txPct":1.84,"txVal":5.52,"liq":294.48,"prazo":"1  dia útil","am":"2026/06"}];
+let chartsR={};
+
+function filtrarRede(){
+  const F=getFilters();
+  return REDE.filter(r=>{
+    const[y,mm]=r.am.split('/');
+    if(F.ano&&y!==F.ano)return false;
+    if(F.mes&&mm!==F.mes)return false;
+    return true;
+  });
+}
+
+function agrupaPor(dados, key){
+  const m={};
+  dados.forEach(r=>{
+    const k=r[key];
+    if(!m[k])m[k]={bruto:0,liq:0,taxas:0,n:0};
+    m[k].bruto+=r.bruto; m[k].liq+=r.liq; m[k].taxas+=r.txVal; m[k].n++;
+  });
+  return m;
+}
+
+function renderRede(){
+  const dados=filtrarRede();
+  const kpiEl=document.getElementById('rede-kpis');
+
+  if(!dados.length){
+    kpiEl.innerHTML='<div class="v-kpi"><div class="v-kpi-val">—</div><div class="v-kpi-lbl">Sem vendas Rede no período selecionado</div></div>';
+    ['ch-rede-band','ch-rede-band-taxa','ch-rede-modal','ch-rede-modal-taxa','ch-rede-parc','ch-rede-parc-taxa','ch-rede-dia','ch-rede-hora'].forEach(id=>{
+      if(chartsR[id]){chartsR[id].destroy();delete chartsR[id];}
+    });
+    document.getElementById('tb-rede').innerHTML='<tr><td colspan="11" style="text-align:center;color:#999;padding:20px">Nenhuma venda Rede no período selecionado</td></tr>';
+    return;
+  }
+
+  const tBruto=dados.reduce((s,r)=>s+r.bruto,0);
+  const tLiq=dados.reduce((s,r)=>s+r.liq,0);
+  const tTaxas=dados.reduce((s,r)=>s+r.txVal,0);
+  const taxaMedia=tBruto>0?(tTaxas/tBruto*100):0;
+  const ticketMedio=tBruto/dados.length;
+
+  kpiEl.innerHTML=`
+    <div class="v-kpi"><div class="v-kpi-val">${fmtV(tBruto)}</div><div class="v-kpi-lbl">Vendas Brutas</div><div class="v-kpi-sub">${dados.length} vendas</div></div>
+    <div class="v-kpi"><div class="v-kpi-val" style="color:#ef4444">${fmtV(tTaxas)}</div><div class="v-kpi-lbl">Total de Taxas Pagas</div><div class="v-kpi-sub" style="color:#ef4444">${taxaMedia.toFixed(2)}% do bruto</div></div>
+    <div class="v-kpi"><div class="v-kpi-val" style="color:#22c55e">${fmtV(tLiq)}</div><div class="v-kpi-lbl">Valor Líquido Recebido</div></div>
+    <div class="v-kpi"><div class="v-kpi-val">${fmtV(ticketMedio)}</div><div class="v-kpi-lbl">Ticket Médio</div></div>
+  `;
+
+  // ---- Bandeira ----
+  const byBand=agrupaPor(dados,'band');
+  const bandKeys=Object.keys(byBand).sort((a,b)=>byBand[b].bruto-byBand[a].bruto);
+  if(chartsR.band)chartsR.band.destroy();
+  chartsR.band=new Chart(document.getElementById('ch-rede-band'),{type:'doughnut',
+    data:{labels:bandKeys,datasets:[{data:bandKeys.map(k=>byBand[k].bruto),backgroundColor:CORES,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:11}},
+      tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtV(c.raw)} (${(c.raw/tBruto*100).toFixed(1)}%)`}}}}});
+
+  if(chartsR.bandTaxa)chartsR.bandTaxa.destroy();
+  chartsR.bandTaxa=new Chart(document.getElementById('ch-rede-band-taxa'),{type:'bar',
+    data:{labels:bandKeys,datasets:[{label:'Taxa média %',data:bandKeys.map(k=>byBand[k].bruto>0?(byBand[k].taxas/byBand[k].bruto*100):0),
+      backgroundColor:CORES,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(2)}%`}}},
+      scales:{y:{ticks:{callback:v=>v.toFixed(1)+'%'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Modalidade (crédito à vista / crédito parcelado / débito) ----
+  const modalKey=r=>r.modal==='crédito'?(r.tipo.includes('parcelado')?'Crédito parcelado':'Crédito à vista'):'Débito';
+  const dadosModal=dados.map(r=>({...r,modalGrp:modalKey(r)}));
+  const byModal=agrupaPor(dadosModal.map(r=>({...r,band:r.modalGrp})),'band');
+  const modalKeys=Object.keys(byModal).sort((a,b)=>byModal[b].bruto-byModal[a].bruto);
+  if(chartsR.modal)chartsR.modal.destroy();
+  chartsR.modal=new Chart(document.getElementById('ch-rede-modal'),{type:'doughnut',
+    data:{labels:modalKeys,datasets:[{data:modalKeys.map(k=>byModal[k].bruto),backgroundColor:CORES,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:11}},
+      tooltip:{callbacks:{label:c=>` ${c.label}: ${fmtV(c.raw)} (${(c.raw/tBruto*100).toFixed(1)}%)`}}}}});
+
+  if(chartsR.modalTaxa)chartsR.modalTaxa.destroy();
+  chartsR.modalTaxa=new Chart(document.getElementById('ch-rede-modal-taxa'),{type:'bar',
+    data:{labels:modalKeys,datasets:[{label:'Taxa média %',data:modalKeys.map(k=>byModal[k].bruto>0?(byModal[k].taxas/byModal[k].bruto*100):0),
+      backgroundColor:CORES,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(2)}%`}}},
+      scales:{y:{ticks:{callback:v=>v.toFixed(1)+'%'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Parcelamento ----
+  const byParc={};
+  dados.forEach(r=>{
+    const k=r.parc===1?'À vista':r.parc+'x';
+    if(!byParc[k])byParc[k]={bruto:0,taxas:0,n:0,ord:r.parc};
+    byParc[k].bruto+=r.bruto; byParc[k].taxas+=r.txVal; byParc[k].n++;
+  });
+  const parcKeys=Object.keys(byParc).sort((a,b)=>byParc[a].ord-byParc[b].ord);
+  if(chartsR.parc)chartsR.parc.destroy();
+  chartsR.parc=new Chart(document.getElementById('ch-rede-parc'),{type:'bar',
+    data:{labels:parcKeys,datasets:[{label:'Qtd. vendas',data:parcKeys.map(k=>byParc[k].n),backgroundColor:'#4f46e580',borderColor:'#4f46e5',borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${c.raw} venda(s) · ${fmtV(byParc[parcKeys[c.dataIndex]].bruto)}`}}},
+      scales:{y:{ticks:{stepSize:1},grid:{color:'#f0f0f0'}}}}});
+
+  if(chartsR.parcTaxa)chartsR.parcTaxa.destroy();
+  chartsR.parcTaxa=new Chart(document.getElementById('ch-rede-parc-taxa'),{type:'line',
+    data:{labels:parcKeys,datasets:[{label:'Taxa efetiva %',data:parcKeys.map(k=>byParc[k].bruto>0?(byParc[k].taxas/byParc[k].bruto*100):0),
+      borderColor:'#ef4444',backgroundColor:'#ef444420',borderWidth:2.5,pointRadius:4,fill:true,tension:.2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${c.raw.toFixed(2)}%`}}},
+      scales:{y:{ticks:{callback:v=>v.toFixed(1)+'%'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Evolução diária ----
+  const byDia={};
+  dados.forEach(r=>{
+    if(!byDia[r.dt])byDia[r.dt]={bruto:0,liq:0};
+    byDia[r.dt].bruto+=r.bruto; byDia[r.dt].liq+=r.liq;
+  });
+  const diaKeys=Object.keys(byDia).sort((a,b)=>{
+    const[da,ma,ya]=a.split('/'); const[db,mb,yb]=b.split('/');
+    return (ya+ma+da).localeCompare(yb+mb+db);
+  });
+  if(chartsR.dia)chartsR.dia.destroy();
+  chartsR.dia=new Chart(document.getElementById('ch-rede-dia'),{type:'bar',
+    data:{labels:diaKeys,datasets:[
+      {label:'Bruto',data:diaKeys.map(k=>byDia[k].bruto),backgroundColor:'#4f46e580',borderColor:'#4f46e5',borderWidth:1,borderRadius:3},
+      {label:'Líquido',data:diaKeys.map(k=>byDia[k].liq),backgroundColor:'#22c55e80',borderColor:'#22c55e',borderWidth:1,borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmtV(c.raw)}`}}},
+      scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(1)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Por horário ----
+  const byHora={};
+  dados.forEach(r=>{
+    const h=r.hr?r.hr.split(':')[0]+'h':'—';
+    if(!byHora[h])byHora[h]={bruto:0,n:0};
+    byHora[h].bruto+=r.bruto; byHora[h].n++;
+  });
+  const horaKeys=Object.keys(byHora).sort();
+  if(chartsR.hora)chartsR.hora.destroy();
+  chartsR.hora=new Chart(document.getElementById('ch-rede-hora'),{type:'bar',
+    data:{labels:horaKeys,datasets:[{label:'Vendas',data:horaKeys.map(k=>byHora[k].bruto),backgroundColor:'#06b6d480',borderColor:'#06b6d4',borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${fmtV(c.raw)} · ${byHora[horaKeys[c.dataIndex]].n} venda(s)`}}},
+      scales:{y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(1)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Tabela ----
+  const tb=document.getElementById('tb-rede'); tb.innerHTML='';
+  const sortedRows=[...dados].sort((a,b)=>{
+    const[da,ma,ya]=a.dt.split('/'); const[db,mb,yb]=b.dt.split('/');
+    const cmp=(yb+mb+db).localeCompare(ya+ma+da);
+    return cmp!==0?cmp:(b.hr||'').localeCompare(a.hr||'');
+  });
+  sortedRows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.dt}</td><td>${r.hr}</td>
+      <td><span class="pill sm" style="background:#f3f4f6;color:#374151">${r.band}</span></td>
+      <td>${r.modal}</td><td>${r.tipo}</td>
+      <td class="tc">${r.parc>1?r.parc+'x':'—'}</td>
+      <td class="tr">${fmtV(r.bruto)}</td>
+      <td class="tr" style="color:#ef4444">${r.txPct.toFixed(2)}%</td>
+      <td class="tr" style="color:#ef4444">${fmtV(r.txVal)}</td>
+      <td class="tr" style="color:#22c55e;font-weight:600">${fmtV(r.liq)}</td>
+      <td style="font-size:.72rem;color:#888">${r.prazo}</td>`;
+    tb.appendChild(tr);
+  });
+}
+</script>
+
 
 <!-- ESTOQUE -->
 <div class="page" id="page-estoque">
