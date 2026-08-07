@@ -163,6 +163,7 @@ tr:hover td{background:#fafafa}
   <div class="tab" onclick="showPage('rede',this)">💳 Taxas Rede</div>
   <div class="tab" onclick="showPage('estoque',this)">📦 Estoque</div>
   <div class="tab" onclick="showPage('pagamentos',this)">💰 Fluxo de Pagamentos</div>
+  <div class="tab" onclick="showPage('social',this)">📱 Redes Sociais</div>
 </div>
 
 <div class="filters">
@@ -400,12 +401,14 @@ function showPage(p,el){
   document.getElementById('fc-forn-cp').style.display=p==='pagamentos'?'flex':'none';
   const estFiltros=['fc-tipopeca','fc-cor','fc-tamanho','fc-estbusca'];
   estFiltros.forEach(id=>document.getElementById(id).style.display=p==='estoque'?'flex':'none');
+  if(p==='social'){ document.getElementById('fc-conta').style.display='none'; }
   if(p==='geral') renderGeral();
   else if(p==='categorias') renderCategorias();
   else if(p==='lancamentos') renderLancamentos();
   else if(p==='vendas') renderVendas();
   else if(p==='rede') renderRede();
   else if(p==='pagamentos') renderPagamentos();
+  else if(p==='social') renderSocial();
   else if(p==='estoque') renderEstoque();
 }
 
@@ -631,6 +634,7 @@ function resetFiltros(){
   else if(curPage==='rede')renderRede();
   else if(curPage==='estoque')renderEstoque();
   else if(curPage==='pagamentos')renderPagamentos();
+  else if(curPage==='social')renderSocial();
   else renderLancamentos();
 }
 
@@ -664,6 +668,7 @@ window.addEventListener('load',()=>{
     else if(curPage==='vendas')renderVendas();
     else if(curPage==='rede')renderRede();
     else if(curPage==='pagamentos')renderPagamentos();
+    else if(curPage==='social')renderSocial();
     else renderLancamentos();
   }));
   document.getElementById('f-status-cp').addEventListener('change',()=>{ if(curPage==='pagamentos')renderPagamentos(); });
@@ -1870,6 +1875,59 @@ function renderRedeLojaYoY(){
   </div>
 </div>
 
+<!-- REDES SOCIAIS -->
+<div class="page" id="page-social">
+  <div class="container">
+
+    <div class="alert-note">
+      📱 Análise construída a partir do relatório de posts exportado do Meta Business Suite (Instagram/Facebook da Linum), período de <span id="social-periodo">—</span>. Os KPIs e gráficos respeitam o filtro de Ano/Mês selecionado; a análise escrita abaixo considera o período completo do relatório.
+    </div>
+
+    <div class="v-kpi-row" id="social-kpis"></div>
+
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card"><div class="card-title">📅 Alcance e Engajamento por Mês</div><div class="chart-wrap"><canvas id="ch-social-mes"></canvas></div></div>
+      <div class="card"><div class="card-title">🎬 Desempenho por Tipo de Post <span class="hint">alcance médio e taxa de engajamento média</span></div><div class="chart-wrap"><canvas id="ch-social-tipo"></canvas></div></div>
+    </div>
+
+    <div class="charts-grid" style="margin-bottom:14px">
+      <div class="card"><div class="card-title">📆 Desempenho por Dia da Semana <span class="hint">alcance médio</span></div><div class="chart-wrap"><canvas id="ch-social-dow"></canvas></div></div>
+      <div class="card"><div class="card-title">🏆 Top 10 Posts por Alcance</div><div class="chart-wrap"><canvas id="ch-social-top"></canvas></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="font-size:1rem;margin-bottom:10px;color:#333">💡 Análise para as próximas postagens</h3>
+      <div class="cons-section">
+        <h4>📊 O que está funcionando</h4>
+        <p>Os dois posts com maior alcance do período são vídeos de <strong>processo artesanal</strong> — pintura em batik (33.684 de alcance) e pintura em aquarela inspirada nos coqueiros do Rio (15.444) — mostrando a técnica por trás da estampa, não só a peça pronta. Esse formato de "making of" é, disparado, o que melhor performa em alcance na página.</p>
+        <p>Conteúdo sazonal com apelo emocional também se destaca: o post de Dia das Mães (10/05) teve <strong>taxa de engajamento de 20,4%</strong> — mais de 10x a média do período (~1,8%). Maio foi o melhor mês do ano em alcance total (100.967) e engajamento (2.225), justamente combinando pintura artesanal + Dia das Mães + consolidação da Loja Gávea.</p>
+        <p>Fotos (5 posts no período) têm taxa de engajamento média mais alta que vídeos (4,9% vs 1,4%), embora com alcance bem menor — indicam maior força para engajar quem já segue a página do que para atrair público novo.</p>
+      </div>
+      <div class="cons-negativo">⚠️ <strong>Queda abrupta a partir de junho:</strong> o alcance total caiu de 100.967 (maio) para 47.392 (junho) e despencou para 10.159 em julho — quase 90% abaixo do pico de maio, com a mesma quantidade de posts no mês (9 em maio, 9 em julho). Ou seja, não é uma questão de menos posts, é queda de desempenho por post — vale investigar se houve mudança de horário, formato ou algoritmo.</div>
+      <div class="cons-alert" style="margin-top:8px">⚠️ <strong>Formatos que não funcionam:</strong> posts do tipo "Seu reel" (compartilhamento de Reels sem legenda própria escrita) tiveram alcance consistentemente baixo nos 3 exemplos identificados no período. O único post do tipo "Links" (compartilhamento direto sem vídeo/imagem de destaque) teve engajamento zero.</div>
+      <div class="cons-section" style="margin-top:12px">
+        <h4>🎯 Recomendações para os próximos posts</h4>
+        <ul>
+          <li>Priorizar vídeos de "making of" / processo artesanal (pintura, tingimento, bordado à mão) — é o formato com maior potencial de alcance comprovado nesta página</li>
+          <li>Sempre escrever legenda própria nos Reels — nunca postar o compartilhamento padrão "Seu reel" sem texto</li>
+          <li>Mapear com antecedência as próximas datas comemorativas (ver aba Análise de Vendas) e preparar conteúdo emocional específico — o Dia das Mães comprovou o potencial desse tipo de post</li>
+          <li>Investigar o que mudou a partir de junho (horário de postagem, formato, algoritmo) já que a queda de alcance foi abrupta e não se explica por menos posts</li>
+          <li>Intercalar mais fotos de bastidores/detalhes entre os vídeos de produto — engajam proporcionalmente melhor com quem já segue a página</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">📋 Todos os Posts <span class="hint">ordenado por alcance · clique no link para abrir o post</span></div>
+      <div class="tbl-wrap tall"><table>
+        <thead><tr><th>Data</th><th>Tipo</th><th>Legenda</th><th class="tr">Visualizações</th><th class="tr">Alcance</th><th class="tr">Engajamento</th><th class="tr">Taxa</th><th class="tr">Cliques link</th><th>Post</th></tr></thead>
+        <tbody id="tb-social"></tbody>
+      </table></div>
+    </div>
+
+  </div>
+</div>
+
 <script>
 // ESTOQUE_RAW: nível PRODUTO (não SKU). Cada produto traz qtdTotal já somada e a lista de
 // variações [cor,tam,qtd] reconstituída a partir das abas "Estoque Gávea"/"Estoque Ipanema"
@@ -2178,6 +2236,129 @@ function renderPagamentos(){
       <td class="tr">${fmtV(c.valor)}</td>
       <td class="tc"><span class="pill" style="background:${bg};color:${fg}">${c.status}</span></td>
       <td style="font-size:.78rem;color:#666">${c.dataPagamento?('Pago em '+c.dataPagamento):'—'}</td>`;
+    tb.appendChild(tr);
+  });
+}
+</script>
+
+<script>
+const META_POSTS=[{"id":"840004045530065","dt":"01/01/2026","hora":"07:01","dow":"Thursday","am":"2026/01","tipo":"Vídeos","caption":"O vestido chemisier de manga curta une praticidade e elegância em cada detalhe. ✨ Com botões de madrepérola e bolsos laterais, é uma peça versátil, atemporal e fácil de usar em dif","views":33344.0,"alcance":16710.0,"reacoes":151.0,"comentarios":49.0,"compart":5.0,"engaj":205.0,"taxaEngaj":1.23,"cliques":140.0,"link":"https://www.facebook.com/reel/877057134976253/"},{"id":"1016023784594756","dt":"06/08/2026","hora":"17:02","dow":"Thursday","am":"2026/08","tipo":"Vídeos","caption":"Pintura botânica em puro linho. Inspiradas na Costela-de-Adão, cada peça é pintada manualmente, uma a uma, com tempo, cuidado e arte. O resultado é uma criação única, onde a nature","views":66.0,"alcance":37.0,"reacoes":3.0,"comentarios":1.0,"compart":1.0,"engaj":5.0,"taxaEngaj":13.51,"cliques":0,"link":"https://www.facebook.com/reel/1384119253663194/"},{"id":"1012505368279931","dt":"02/08/2026","hora":"14:27","dow":"Sunday","am":"2026/08","tipo":"Vídeos","caption":"A elegância do linho encontra a delicadeza de uma pintura botânica, criando uma peça com personalidade e leveza. Peças feitas para quem aprecia conforto, autenticidade e sofisticaç","views":320.0,"alcance":293.0,"reacoes":3.0,"comentarios":0.0,"compart":0.0,"engaj":3.0,"taxaEngaj":1.02,"cliques":0,"link":"https://www.facebook.com/reel/1586488893489721/"},{"id":"1008240068706461","dt":"28/07/2026","hora":"16:21","dow":"Tuesday","am":"2026/07","tipo":"Vídeos","caption":"A natureza sempre foi a nossa maior inspiração. A beleza da Costela-de-Adão ganha vida em uma pintura artesanal exclusiva, cuidadosamente aplicada sobre o linho. Cada peça é única,","views":2426.0,"alcance":1416.0,"reacoes":5.0,"comentarios":3.0,"compart":0.0,"engaj":8.0,"taxaEngaj":0.56,"cliques":15.0,"link":"https://www.facebook.com/reel/1562466682001741/"},{"id":"1005764178954050","dt":"25/07/2026","hora":"17:44","dow":"Saturday","am":"2026/07","tipo":"Vídeos","caption":"Seu reel","views":4795.0,"alcance":3001.0,"reacoes":31.0,"comentarios":4.0,"compart":1.0,"engaj":36.0,"taxaEngaj":1.2,"cliques":33.0,"link":"https://www.facebook.com/reel/1804539940710231/"},{"id":"1002572822606519","dt":"21/07/2026","hora":"17:56","dow":"Tuesday","am":"2026/07","tipo":"Vídeos","caption":"Seu reel","views":255.0,"alcance":195.0,"reacoes":2.0,"comentarios":0.0,"compart":0.0,"engaj":2.0,"taxaEngaj":1.03,"cliques":0,"link":"https://www.facebook.com/reel/2573469606451581/"},{"id":"1001717496025385","dt":"20/07/2026","hora":"15:54","dow":"Monday","am":"2026/07","tipo":"Vídeos","caption":"A combinação perfeita de cores encontra a leveza do linho em um vestido que se move com você. Cada detalhe revela um design atemporal, onde o contraste das cores, o caimento impecá","views":339.0,"alcance":268.0,"reacoes":3.0,"comentarios":0.0,"compart":0.0,"engaj":3.0,"taxaEngaj":1.12,"cliques":0,"link":"https://www.facebook.com/reel/961926266852364/"},{"id":"999416386255496","dt":"17/07/2026","hora":"16:50","dow":"Friday","am":"2026/07","tipo":"Vídeos","caption":"Seu reel","views":2711.0,"alcance":1588.0,"reacoes":16.0,"comentarios":5.0,"compart":1.0,"engaj":22.0,"taxaEngaj":1.39,"cliques":23.0,"link":"https://www.facebook.com/reel/1545732450270003/"},{"id":"998623406334794","dt":"16/07/2026","hora":"17:09","dow":"Thursday","am":"2026/07","tipo":"Vídeos","caption":"A bossa de uma peça oversize em linho. Leveza, elegância e conforto se encontram em uma modelagem ampla e atemporal, que valoriza o movimento natural do linho puro. Uma peça versát","views":395.0,"alcance":296.0,"reacoes":7.0,"comentarios":0.0,"compart":0.0,"engaj":7.0,"taxaEngaj":2.36,"cliques":0,"link":"https://www.facebook.com/reel/1551751429694976/"},{"id":"996202493243552","dt":"13/07/2026","hora":"18:19","dow":"Monday","am":"2026/07","tipo":"Vídeos","caption":"Bordado Folhas de Outono 🍂 A arte do bordado feito à mão em puro linho. Cada ponto revela o cuidado do trabalho artesanal, transformando a peça em uma expressão de arte, textura e ","views":518.0,"alcance":409.0,"reacoes":4.0,"comentarios":1.0,"compart":0.0,"engaj":5.0,"taxaEngaj":1.22,"cliques":0,"link":"https://www.facebook.com/reel/1569315104569876/"},{"id":"990497880480680","dt":"06/07/2026","hora":"15:43","dow":"Monday","am":"2026/07","tipo":"Vídeos","caption":"O inverno ganha forma na simplicidade dos clássicos. 🤎🖤 Tons de marrom e preto traduzem a elegância atemporal que atravessa estações sem perder a essência. Em linho puro, nossas pe","views":5574.0,"alcance":2776.0,"reacoes":39.0,"comentarios":7.0,"compart":0.0,"engaj":46.0,"taxaEngaj":1.66,"cliques":29.0,"link":"https://www.facebook.com/reel/1028313419595158/"},{"id":"987219717475163","dt":"02/07/2026","hora":"23:02","dow":"Thursday","am":"2026/07","tipo":"Links","caption":"Siga também no Instagram para ver mais.","views":374.0,"alcance":210.0,"reacoes":0.0,"comentarios":0.0,"compart":0.0,"engaj":0.0,"taxaEngaj":0.0,"cliques":0,"link":"https://www.facebook.com/linumipanema/posts/pfbid0Ye7DLB2pD5cYwQrRsVrihi11rnxHHTSQmHPxUB72QjccT2mUX9CadcUdP9vtGTw2l"},{"id":"981894954674306","dt":"26/06/2026","hora":"16:56","dow":"Friday","am":"2026/06","tipo":"Vídeos","caption":"Seu reel","views":9876.0,"alcance":5652.0,"reacoes":64.0,"comentarios":6.0,"compart":1.0,"engaj":71.0,"taxaEngaj":1.26,"cliques":81.0,"link":"https://www.facebook.com/reel/1545857240541085/"},{"id":"978666171663851","dt":"22/06/2026","hora":"21:09","dow":"Monday","am":"2026/06","tipo":"Fotos","caption":"🎉 Eu ganhei o selo de talento emergente esta semana por criar conteúdo interessante que desperta o interesse dos meus fãs.","views":505.0,"alcance":314.0,"reacoes":2.0,"comentarios":0.0,"compart":1.0,"engaj":3.0,"taxaEngaj":0.96,"cliques":0,"link":"https://www.facebook.com/linumipanema/posts/pfbid02PsBqzX4taNnsgwuw6Xb8JqfUAxuYNnfXVaQoWMz7vqjqjmCqxUtxffQA9zu7FkrEl"},{"id":"978654504998351","dt":"22/06/2026","hora":"20:50","dow":"Monday","am":"2026/06","tipo":"Fotos","caption":"🎉 Eu ganhei o selo de talento emergente esta semana por criar conteúdo interessante que desperta o interesse dos meus fãs.","views":490.0,"alcance":309.0,"reacoes":4.0,"comentarios":0.0,"compart":1.0,"engaj":5.0,"taxaEngaj":1.62,"cliques":0,"link":"https://www.facebook.com/linumipanema/posts/pfbid01ENgChwMv42rj2LYrKqQUtm8iMjGGZcJL23UoFLueyDGvvs1n2DY52Sr2i71NAjjl"},{"id":"978506311679837","dt":"22/06/2026","hora":"16:11","dow":"Monday","am":"2026/06","tipo":"Vídeos","caption":"Os tons do inverno ganham leveza quando encontram o linho. 🤎 O Max Blazer traz elegância, conforto e um caimento impecável em uma proposta atemporal. Disponível nas cores marrom e ","views":2787.0,"alcance":1526.0,"reacoes":20.0,"comentarios":6.0,"compart":0.0,"engaj":26.0,"taxaEngaj":1.7,"cliques":9.0,"link":"https://www.facebook.com/reel/1018033530841982/"},{"id":"976810211849447","dt":"20/06/2026","hora":"17:07","dow":"Saturday","am":"2026/06","tipo":"Vídeos","caption":"Combinamos o marinho e o verde, uma composição autoral que transforma o linho em expressão. Leve, contemporânea e naturalmente elegante. O linho em toda a sua essência. 🤍 📍 Galeria","views":19850.0,"alcance":8941.0,"reacoes":123.0,"comentarios":16.0,"compart":1.0,"engaj":140.0,"taxaEngaj":1.57,"cliques":97.0,"link":"https://www.facebook.com/reel/1007093695362735/"},{"id":"973496408847494","dt":"16/06/2026","hora":"16:24","dow":"Tuesday","am":"2026/06","tipo":"Vídeos","caption":"Cada peça é única, tingida e trabalhada artesanalmente pela técnica do batik, valorizando a beleza do linho puro e o cuidado presente em cada detalhe. 💙 A combinação do marinho com","views":1079.0,"alcance":753.0,"reacoes":6.0,"comentarios":0.0,"compart":1.0,"engaj":7.0,"taxaEngaj":0.93,"cliques":1.0,"link":"https://www.facebook.com/reel/2186320772225801/"},{"id":"972686332261835","dt":"15/06/2026","hora":"17:18","dow":"Monday","am":"2026/06","tipo":"Vídeos","caption":"✨ Novidade LINUM ✨ Nosso novo vestido chega com uma pintura exclusiva em batik, trazendo ainda mais personalidade e autenticidade para uma peça atemporal. 💙💚 A combinação perfeita ","views":41121.0,"alcance":29316.0,"reacoes":128.0,"comentarios":18.0,"compart":3.0,"engaj":149.0,"taxaEngaj":0.51,"cliques":172.0,"link":"https://www.facebook.com/reel/2608914779545885/"},{"id":"963109873219481","dt":"04/06/2026","hora":"13:37","dow":"Thursday","am":"2026/06","tipo":"Vídeos","caption":"✨ Um pouco mais desse dia tão especial… Nossa inauguração no Shopping da Gávea foi marcada por encontros, sorrisos, abraços e muita emoção. 🤍 Momentos especiais merecem ser lembrad","views":0,"alcance":581.0,"reacoes":8.0,"comentarios":1.0,"compart":0.0,"engaj":9.0,"taxaEngaj":1.55,"cliques":1.0,"link":"https://www.facebook.com/reel/1481739973203289/"},{"id":"958763063654162","dt":"30/05/2026","hora":"17:00","dow":"Saturday","am":"2026/05","tipo":"Vídeos","caption":"O linho transcende estações e tendências ✨ Nossa max camisa combinada com a calça transpassada traduz a essência da elegância descomplicada. Peças com personalidade, caimento impec","views":32999.0,"alcance":13887.0,"reacoes":150.0,"comentarios":25.0,"compart":1.0,"engaj":176.0,"taxaEngaj":1.27,"cliques":178.0,"link":"https://www.facebook.com/reel/1450330270232041/"},{"id":"952093220987813","dt":"22/05/2026","hora":"15:39","dow":"Friday","am":"2026/05","tipo":"Vídeos","caption":"Elegante e super confortável ✨ Nosso macacão, com botões de madrepérola, une conforto e beleza em uma peça leve, sofisticada e versátil para diferentes momentos.💛 E para completar,","views":10413.0,"alcance":7262.0,"reacoes":178.0,"comentarios":13.0,"compart":3.0,"engaj":194.0,"taxaEngaj":2.67,"cliques":245.0,"link":"https://www.facebook.com/reel/26954003450931956/"},{"id":"950163167847485","dt":"20/05/2026","hora":"06:48","dow":"Wednesday","am":"2026/05","tipo":"Vídeos","caption":"","views":869.0,"alcance":581.0,"reacoes":0.0,"comentarios":0.0,"compart":0.0,"engaj":0.0,"taxaEngaj":0.0,"cliques":0,"link":"https://www.facebook.com/linumipanema/posts/pfbid02n7Hb4dkZQUE6u1F3mi74f874eK6HRYoXHnd1B9CEzbt5wwAtQ7syK1mbM9jgGXfAl"},{"id":"949628317900970","dt":"19/05/2026","hora":"15:38","dow":"Tuesday","am":"2026/05","tipo":"Vídeos","caption":"E foi assim a nossa inauguração no @shoppingdagavea ✨ Um dia cheio de encontros especiais, carinho, sorrisos e muita energia boa! 🤍💛 Celebrar a segunda casa da Linum ao lado de pes","views":19454.0,"alcance":7379.0,"reacoes":91.0,"comentarios":21.0,"compart":5.0,"engaj":117.0,"taxaEngaj":1.59,"cliques":102.0,"link":"https://www.facebook.com/reel/1495907612198276/"},{"id":"946366778227124","dt":"15/05/2026","hora":"17:14","dow":"Friday","am":"2026/05","tipo":"Vídeos","caption":"Pintura em aquarela 🎨 inspirada nos coqueiros do Rio — uma verdadeira obra de arte em puro linho, feita e pincelada à mão. Cada detalhe carrega a nossa essência: leve, natural e au","views":23615.0,"alcance":15444.0,"reacoes":300.0,"comentarios":9.0,"compart":5.0,"engaj":314.0,"taxaEngaj":2.03,"cliques":357.0,"link":"https://www.facebook.com/reel/972528878963772/"},{"id":"943774491819686","dt":"12/05/2026","hora":"14:17","dow":"Tuesday","am":"2026/05","tipo":"Vídeos","caption":"Pintura artesanal em batik ✨ Peça por peça, feita à mão e tingida com cuidado, revelando a beleza dos detalhes únicos. Confeccionada em puro linho, uma fibra natural que traz levez","views":61948.0,"alcance":33684.0,"reacoes":132.0,"comentarios":12.0,"compart":4.0,"engaj":148.0,"taxaEngaj":0.44,"cliques":377.0,"link":"https://www.facebook.com/reel/1540630657578936/"},{"id":"942004525330016","dt":"10/05/2026","hora":"09:11","dow":"Sunday","am":"2026/05","tipo":"Fotos","caption":"Neste Dia das Mães, celebramos a força feminina que acolhe, guia e transforma com amor. A delicadeza de uma mãe nunca foi fragilidade — é potência, presença e cuidado em sua forma ","views":10979.0,"alcance":5665.0,"reacoes":1119.0,"comentarios":32.0,"compart":6.0,"engaj":1157.0,"taxaEngaj":20.42,"cliques":67.0,"link":"https://www.facebook.com/linumipanema/posts/pfbid02mVFJjkgw3TGRtjH9oXeSGAxbJGyMMvZXd8wqDtDgE1wEWjCTFa6u5D6AeuaZe8o7l"},{"id":"938992215631247","dt":"06/05/2026","hora":"15:05","dow":"Wednesday","am":"2026/05","tipo":"Vídeos","caption":"✨Vestido em linho com pintura artesanal e botões de madrepérola — uma escolha especial para usar no Dia das Mães ou para presentear com elegância. Uma peça cool, atemporal e contem","views":6812.0,"alcance":4105.0,"reacoes":28.0,"comentarios":1.0,"compart":0.0,"engaj":29.0,"taxaEngaj":0.71,"cliques":24.0,"link":"https://www.facebook.com/reel/1370421781575943/"},{"id":"938937578970044","dt":"06/05/2026","hora":"12:49","dow":"Wednesday","am":"2026/05","tipo":"Vídeos","caption":"Seu reel","views":17768.0,"alcance":12960.0,"reacoes":80.0,"comentarios":7.0,"compart":3.0,"engaj":90.0,"taxaEngaj":0.69,"cliques":52.0,"link":"https://www.facebook.com/reel/1458621429371913/"},{"id":"922124023984733","dt":"15/04/2026","hora":"14:21","dow":"Wednesday","am":"2026/04","tipo":"Vídeos","caption":"Seu reel","views":814.0,"alcance":746.0,"reacoes":10.0,"comentarios":1.0,"compart":1.0,"engaj":12.0,"taxaEngaj":1.61,"cliques":0,"link":"https://www.facebook.com/reel/26343960401893817/"},{"id":"919862610877541","dt":"12/04/2026","hora":"14:39","dow":"Sunday","am":"2026/04","tipo":"Vídeos","caption":"Blusa de malha listrada, produzida por nós, perfeita para compor com nossas peças em puro linho. Um encontro de texturas que traz um olhar contemporâneo — especialmente quando comb","views":13313.0,"alcance":6875.0,"reacoes":81.0,"comentarios":13.0,"compart":2.0,"engaj":96.0,"taxaEngaj":1.4,"cliques":53.0,"link":"https://www.facebook.com/reel/956320456777189/"},{"id":"917607557769713","dt":"09/04/2026","hora":"14:16","dow":"Thursday","am":"2026/04","tipo":"Vídeos","caption":"Dois tons, um clássico atemporal ✨ Em puro linho, com botões de madrepérola natural, esse vestido une elegância e versatilidade em cada movimento. Para vestir com naturalidade e pr","views":52891.0,"alcance":25958.0,"reacoes":192.0,"comentarios":25.0,"compart":1.0,"engaj":218.0,"taxaEngaj":0.84,"cliques":151.0,"link":"https://www.facebook.com/reel/1337551981544670/"},{"id":"914410394756096","dt":"05/04/2026","hora":"08:29","dow":"Sunday","am":"2026/04","tipo":"Fotos","caption":"#ipanema #páscoa2026 #linum #linumipanema #momentosemfamília","views":914.0,"alcance":579.0,"reacoes":1.0,"comentarios":0.0,"compart":0.0,"engaj":1.0,"taxaEngaj":0.17,"cliques":0,"link":"https://www.facebook.com/linumipanema/posts/pfbid0k8Q7FtJv2nfPXYctS8RZmTKxsqXBaRYZEx4uSkcd7kTmGQaBrmL2yS3gG7bYmSifl"},{"id":"912931161570686","dt":"03/04/2026","hora":"10:26","dow":"Friday","am":"2026/04","tipo":"Vídeos","caption":"Seu reel","views":5933.0,"alcance":3954.0,"reacoes":38.0,"comentarios":4.0,"compart":0.0,"engaj":42.0,"taxaEngaj":1.06,"cliques":34.0,"link":"https://www.facebook.com/reel/3099414470260016/"},{"id":"912930694904066","dt":"03/04/2026","hora":"10:25","dow":"Friday","am":"2026/04","tipo":"Vídeos","caption":"Bata leve em cambraia de puro linho e calça ballon 🤍 Duas peças que traduzem o equilíbrio perfeito entre leveza e estilo. A bata, delicada e fluida, traz frescor e sofisticação na ","views":16088.0,"alcance":8797.0,"reacoes":50.0,"comentarios":4.0,"compart":1.0,"engaj":55.0,"taxaEngaj":0.63,"cliques":42.0,"link":"https://www.facebook.com/reel/1752107352625983/"},{"id":"899866946210441","dt":"18/03/2026","hora":"11:09","dow":"Wednesday","am":"2026/03","tipo":"Vídeos","caption":"O linho atravessa tendências e permanece essencial. Natural, leve e elegante, ele traduz uma sofisticação atemporal feita para acompanhar você em todas as estações e momentos. Te e","views":3131.0,"alcance":2447.0,"reacoes":35.0,"comentarios":2.0,"compart":0.0,"engaj":37.0,"taxaEngaj":1.51,"cliques":13.0,"link":"https://www.facebook.com/reel/948735774284154/"},{"id":"897026126494523","dt":"14/03/2026","hora":"20:02","dow":"Saturday","am":"2026/03","tipo":"Vídeos","caption":"Por trás de cada peça existe tempo, cuidado e mãos dedicadas a cada detalhe. 🪡🧵 Nossas roupas são feitas uma a uma, valorizando o processo artesanal e a qualidade do linho puro. Po","views":8050.0,"alcance":5436.0,"reacoes":50.0,"comentarios":4.0,"compart":3.0,"engaj":57.0,"taxaEngaj":1.05,"cliques":19.0,"link":"https://www.facebook.com/reel/1158265692963552/"},{"id":"892191193644683","dt":"08/03/2026","hora":"07:28","dow":"Sunday","am":"2026/03","tipo":"Vídeos","caption":"O Dia Internacional da Mulher não é apenas uma data de celebração, é também um marco de memória e reconhecimento das lutas que transformaram a história. Ao longo do tempo, mulheres","views":725.0,"alcance":639.0,"reacoes":2.0,"comentarios":0.0,"compart":0.0,"engaj":2.0,"taxaEngaj":0.31,"cliques":0,"link":"https://www.facebook.com/reel/923975433746045/"},{"id":"890331930497276","dt":"05/03/2026","hora":"18:20","dow":"Thursday","am":"2026/03","tipo":"Vídeos","caption":"✨Neste mês especial, celebramos mulheres que transformam o mundo todos os dias — com força, delicadeza e autenticidade. Porque, assim como o linho, você é naturalmente forte, elega","views":14036.0,"alcance":6430.0,"reacoes":86.0,"comentarios":8.0,"compart":1.0,"engaj":95.0,"taxaEngaj":1.48,"cliques":56.0,"link":"https://www.facebook.com/reel/2128790441296632/"},{"id":"887284337468702","dt":"01/03/2026","hora":"16:33","dow":"Sunday","am":"2026/03","tipo":"Vídeos","caption":"Carioca no jeito, no clima e na essência. ☀️🌊 A Linum é uma marca carioquíssima, que cria suas peças em linho leve e elegante aqui na nossa cidade — perfeitas para viver o Rio de J","views":890.0,"alcance":687.0,"reacoes":14.0,"comentarios":1.0,"compart":1.0,"engaj":16.0,"taxaEngaj":2.33,"cliques":0,"link":"https://www.facebook.com/reel/25431415909871413/"},{"id":"886455687551567","dt":"28/02/2026","hora":"16:13","dow":"Saturday","am":"2026/02","tipo":"Vídeos","caption":"O masculino chegou à Linum com a qualidade e a elegância que definem a nossa marca.✨ Peças em linho puro, pensadas para oferecer conforto, frescor e o melhor que o linho pode propo","views":42527.0,"alcance":24702.0,"reacoes":27.0,"comentarios":1.0,"compart":1.0,"engaj":29.0,"taxaEngaj":0.12,"cliques":9.0,"link":"https://www.facebook.com/reel/873975735637176/"},{"id":"886443584219444","dt":"28/02/2026","hora":"15:50","dow":"Saturday","am":"2026/02","tipo":"Vídeos","caption":"O masculino chegou à Linum com a qualidade e a elegância que definem a nossa marca.✨ Peças em linho puro, pensadas para oferecer conforto, frescor e o melhor que o linho pode propo","views":720.0,"alcance":568.0,"reacoes":3.0,"comentarios":2.0,"compart":0.0,"engaj":5.0,"taxaEngaj":0.88,"cliques":0,"link":"https://www.facebook.com/reel/1712006799763196/"},{"id":"878907281639741","dt":"19/02/2026","hora":"11:55","dow":"Thursday","am":"2026/02","tipo":"Vídeos","caption":"Bermudas em linho puro para um verão leve, elegante e confortável. Escolha a sua e descubra o poder do essencial. Te espero aqui, em Ipanema! 📍Visconde de Pirajá, 444, Loja 111 - I","views":3176.0,"alcance":2288.0,"reacoes":22.0,"comentarios":8.0,"compart":2.0,"engaj":32.0,"taxaEngaj":1.4,"cliques":11.0,"link":"https://www.facebook.com/reel/1208038711498402/"},{"id":"878172945046508","dt":"18/02/2026","hora":"15:15","dow":"Wednesday","am":"2026/02","tipo":"Fotos","caption":"Recebi mais de 400 reações nos meus posts na semana passada. Agradeço a todos pelo apoio! 🎉","views":24848.0,"alcance":11256.0,"reacoes":109.0,"comentarios":9.0,"compart":4.0,"engaj":122.0,"taxaEngaj":1.08,"cliques":306.0,"link":"https://www.facebook.com/linumipanema/posts/pfbid036nyidhzBcpXKn5E3uh2FYnTc96PVigB1aYvkBLB5smqsx8ea9UVNT4PQp8Nk3Jmhl"},{"id":"870755702454899","dt":"09/02/2026","hora":"20:44","dow":"Monday","am":"2026/02","tipo":"Vídeos","caption":"Seu reel","views":9448.0,"alcance":5137.0,"reacoes":54.0,"comentarios":10.0,"compart":2.0,"engaj":66.0,"taxaEngaj":1.28,"cliques":39.0,"link":"https://www.facebook.com/reel/929316889663509/"},{"id":"870735625790240","dt":"09/02/2026","hora":"20:07","dow":"Monday","am":"2026/02","tipo":"Vídeos","caption":"O linho ganha ainda mais delicadeza na nossa coleção em tons de rosa.🌸 Leve, fresco e atemporal, ele traz elegância natural e suavidade para compor looks que atravessam estações co","views":2331.0,"alcance":1524.0,"reacoes":32.0,"comentarios":5.0,"compart":1.0,"engaj":38.0,"taxaEngaj":2.49,"cliques":6.0,"link":"https://www.facebook.com/reel/4295403710721986/"},{"id":"868448566018946","dt":"07/02/2026","hora":"05:09","dow":"Saturday","am":"2026/02","tipo":"Vídeos","caption":"O linho ganha ainda mais delicadeza na nossa coleção em tons de rosa. Leve, fresco e atemporal, ele traz elegância natural e suavidade para compor looks que atravessam estações com","views":757.0,"alcance":645.0,"reacoes":4.0,"comentarios":1.0,"compart":0.0,"engaj":5.0,"taxaEngaj":0.78,"cliques":0,"link":"https://www.facebook.com/reel/1972444670007338/"},{"id":"865238956339907","dt":"03/02/2026","hora":"11:00","dow":"Tuesday","am":"2026/02","tipo":"Vídeos","caption":"Leve, confortável e atemporal. Confeccionado em linho, esse modelo traz praticidade e estilo em uma proposta moderna e descomplicada, perfeita para o dia a dia com elegância. ✨ Te ","views":17238.0,"alcance":8071.0,"reacoes":39.0,"comentarios":3.0,"compart":1.0,"engaj":43.0,"taxaEngaj":0.53,"cliques":56.0,"link":"https://www.facebook.com/reel/1234921048538606/"},{"id":"864444243086045","dt":"02/02/2026","hora":"11:42","dow":"Monday","am":"2026/02","tipo":"Vídeos","caption":"Leve, fresco e cheio de delicadeza. Um vestido em linho traduz uma elegância natural, perfeita para quem busca conforto sem abrir mão de estilo. Uma peça atemporal para acompanhar ","views":10651.0,"alcance":6191.0,"reacoes":57.0,"comentarios":10.0,"compart":1.0,"engaj":68.0,"taxaEngaj":1.1,"cliques":36.0,"link":"https://www.facebook.com/reel/885996237632076/"},{"id":"862456663284803","dt":"30/01/2026","hora":"19:23","dow":"Friday","am":"2026/01","tipo":"Vídeos","caption":"✨ Nossa blusa transpassada de puro linho chega em tom suave, trazendo todo o frescor e a leveza que o linho oferece. Um modelo atemporal que combina perfeitamente com a nossa saia ","views":4818.0,"alcance":3041.0,"reacoes":30.0,"comentarios":3.0,"compart":2.0,"engaj":35.0,"taxaEngaj":1.15,"cliques":25.0,"link":"https://www.facebook.com/reel/1393958155547507/"},{"id":"860487460148390","dt":"28/01/2026","hora":"10:34","dow":"Wednesday","am":"2026/01","tipo":"Vídeos","caption":"A combinação da bata com a saia longa em 100% linho traduz exatamente o que a gente ama: delicadeza, frescor e elegância. Leve, sofisticado e atemporal, é aquele look perfeito para","views":4598.0,"alcance":2566.0,"reacoes":13.0,"comentarios":3.0,"compart":1.0,"engaj":17.0,"taxaEngaj":0.66,"cliques":6.0,"link":"https://www.facebook.com/reel/933924039810316/"},{"id":"859163603614109","dt":"26/01/2026","hora":"20:52","dow":"Monday","am":"2026/01","tipo":"Vídeos","caption":"Cada traço é feito com cuidado, tempo e carinho, respeitando a leveza do tecido e a singularidade de cada peça. Uma pintura que traduz transformação, suavidade e atenção aos detalh","views":612.0,"alcance":512.0,"reacoes":5.0,"comentarios":2.0,"compart":0.0,"engaj":7.0,"taxaEngaj":1.37,"cliques":1.0,"link":"https://www.facebook.com/reel/937337302049430/"},{"id":"857150813815388","dt":"24/01/2026","hora":"12:12","dow":"Saturday","am":"2026/01","tipo":"Vídeos","caption":"A Coleção Libélulas nasce inspirada na leveza, no movimento e na transformação. Em peças de linho, com modelagens atemporais e detalhes especiais, ela foi criada para acompanhar di","views":9613.0,"alcance":5881.0,"reacoes":81.0,"comentarios":3.0,"compart":2.0,"engaj":86.0,"taxaEngaj":1.46,"cliques":67.0,"link":"https://www.facebook.com/reel/870009142452093/"},{"id":"856673737196429","dt":"24/01/2026","hora":"00:15","dow":"Saturday","am":"2026/01","tipo":"Vídeos","caption":"Nossa pintura em aquarela de libélulas carrega energia positiva, leveza e renovação. Ela nos convida a confiar nos ciclos da vida e a apreciar cada transformação com suavidade. Cor","views":2730.0,"alcance":2046.0,"reacoes":15.0,"comentarios":2.0,"compart":1.0,"engaj":18.0,"taxaEngaj":0.88,"cliques":19.0,"link":"https://www.facebook.com/reel/753430877352150/"},{"id":"855348593995610","dt":"22/01/2026","hora":"06:02","dow":"Thursday","am":"2026/01","tipo":"Vídeos","caption":"O vestido bicolor une elegância e design em cada detalhe. Com botões de madrepérola nas costas, traz um charme especial que faz toda a diferença no visual. Disponível nas combinaçõ","views":684.0,"alcance":454.0,"reacoes":7.0,"comentarios":1.0,"compart":0.0,"engaj":8.0,"taxaEngaj":1.76,"cliques":0,"link":"https://www.facebook.com/reel/2954507628087089/"},{"id":"854999054030564","dt":"21/01/2026","hora":"20:11","dow":"Wednesday","am":"2026/01","tipo":"Vídeos","caption":"Delicada, fluida e cheia de personalidade, essa nova pintura traduz a essência da coleção: liberdade, transformação e beleza nos detalhes. Já disponível em nossa loja. Venha ver de","views":4286.0,"alcance":2623.0,"reacoes":31.0,"comentarios":2.0,"compart":0.0,"engaj":33.0,"taxaEngaj":1.26,"cliques":19.0,"link":"https://www.facebook.com/reel/2103584983828847/"},{"id":"851674727696330","dt":"17/01/2026","hora":"10:40","dow":"Saturday","am":"2026/01","tipo":"Vídeos","caption":"A Coleção Libélulas ganha novos traços, cores e movimento. Apresentamos a pintura em aquarela, aplicada de forma artesanal para transformar cada peça em algo único e cheio de levez","views":586.0,"alcance":503.0,"reacoes":4.0,"comentarios":3.0,"compart":1.0,"engaj":8.0,"taxaEngaj":1.59,"cliques":0,"link":"https://www.facebook.com/reel/773234788443549/"},{"id":"845983318265471","dt":"09/01/2026","hora":"14:34","dow":"Friday","am":"2026/01","tipo":"Vídeos","caption":"O vestido em linho puro com gola quadrada é a definição de elegância simples e atemporal. Em tom azul, traz leveza, frescor e um caimento impecável para acompanhar você em diferent","views":16043.0,"alcance":8684.0,"reacoes":74.0,"comentarios":12.0,"compart":4.0,"engaj":90.0,"taxaEngaj":1.04,"cliques":143.0,"link":"https://www.facebook.com/reel/2458956974578330/"},{"id":"844380348425768","dt":"07/01/2026","hora":"10:58","dow":"Wednesday","am":"2026/01","tipo":"Vídeos","caption":"Apresentamos a Coleção Libélulas ✨ Uma nova coleção em linho, pensada para quem valoriza design, qualidade e peças atemporais. Cada libélula é bordada ponto a ponto, transformando ","views":15100.0,"alcance":7711.0,"reacoes":59.0,"comentarios":17.0,"compart":6.0,"engaj":82.0,"taxaEngaj":1.06,"cliques":98.0,"link":"https://www.facebook.com/reel/1239179948103802/"},{"id":"842885418575261","dt":"05/01/2026","hora":"11:52","dow":"Monday","am":"2026/01","tipo":"Vídeos","caption":"Leve, elegante e atemporal. ✨ O vestido em linho é aquela peça essencial que valoriza o visual com naturalidade e conforto, perfeita para acompanhar você em diferentes momentos. Te","views":24935.0,"alcance":12066.0,"reacoes":78.0,"comentarios":15.0,"compart":2.0,"engaj":95.0,"taxaEngaj":0.79,"cliques":78.0,"link":"https://www.facebook.com/reel/1577953423474708/"}];
+let chartsSocial={};
+
+function filtrarSocial(){
+  const F=getFilters();
+  return META_POSTS.filter(p=>{
+    const[y,mm]=p.am.split('/');
+    if(F.ano&&y!==F.ano)return false;
+    if(F.mes&&mm!==F.mes)return false;
+    return true;
+  });
+}
+
+function renderSocial(){
+  const dados=filtrarSocial();
+  const kpiEl=document.getElementById('social-kpis');
+
+  const datasOrdenadas=[...META_POSTS].map(p=>p.dt).sort((a,b)=>{
+    const pd=s=>s.split('/').reverse().join('');
+    return pd(a).localeCompare(pd(b));
+  });
+  document.getElementById('social-periodo').textContent=
+    datasOrdenadas.length? (datasOrdenadas[0]+' a '+datasOrdenadas[datasOrdenadas.length-1]) : '—';
+
+  if(!dados.length){
+    kpiEl.innerHTML='<div class="v-kpi"><div class="v-kpi-val">—</div><div class="v-kpi-lbl">Sem posts no período selecionado</div></div>';
+    ['mes','tipo','dow','top'].forEach(k=>{if(chartsSocial[k]){chartsSocial[k].destroy();delete chartsSocial[k];}});
+    document.getElementById('tb-social').innerHTML='<tr><td colspan="9" style="text-align:center;color:#999;padding:20px">Nenhum post no período selecionado</td></tr>';
+    return;
+  }
+
+  const tAlcance=dados.reduce((s,p)=>s+p.alcance,0);
+  const tViews=dados.reduce((s,p)=>s+p.views,0);
+  const tEngaj=dados.reduce((s,p)=>s+p.engaj,0);
+  const tCliques=dados.reduce((s,p)=>s+p.cliques,0);
+  const taxaMedia=tAlcance>0?(tEngaj/tAlcance*100):0;
+
+  const porMesTmp={};
+  dados.forEach(p=>{ if(!porMesTmp[p.am])porMesTmp[p.am]={alcance:0,n:0}; porMesTmp[p.am].alcance+=p.alcance; porMesTmp[p.am].n++; });
+  let melhorMes='—', melhorMesVal=-1;
+  Object.entries(porMesTmp).forEach(([m,v])=>{ if(v.alcance>melhorMesVal){melhorMesVal=v.alcance;melhorMes=m;} });
+
+  kpiEl.innerHTML=`
+    <div class="v-kpi"><div class="v-kpi-val">${dados.length}</div><div class="v-kpi-lbl">📝 Posts no período</div></div>
+    <div class="v-kpi"><div class="v-kpi-val">${fmtV(tAlcance).replace('R$','').trim()}</div><div class="v-kpi-lbl">👥 Alcance Total</div><div class="v-kpi-sub">${Math.round(tAlcance/dados.length).toLocaleString('pt-BR')} em média/post</div></div>
+    <div class="v-kpi"><div class="v-kpi-val">${Math.round(tEngaj).toLocaleString('pt-BR')}</div><div class="v-kpi-lbl">❤️ Engajamento Total</div><div class="v-kpi-sub">reações+comentários+compart.</div></div>
+    <div class="v-kpi" style="border-color:#22c55e"><div class="v-kpi-val" style="color:#22c55e">${taxaMedia.toFixed(1)}%</div><div class="v-kpi-lbl">📈 Taxa de Engajamento Média</div></div>
+    <div class="v-kpi"><div class="v-kpi-val">${Math.round(tCliques).toLocaleString('pt-BR')}</div><div class="v-kpi-lbl">🔗 Cliques no Link</div></div>
+    <div class="v-kpi" style="border-color:#4f46e5"><div class="v-kpi-val" style="color:#4f46e5">${nomeMes(melhorMes)}</div><div class="v-kpi-lbl">🏆 Melhor Mês</div><div class="v-kpi-sub">${fmtV(melhorMesVal)}</div></div>
+  `;
+
+  // ---- Por mês ----
+  const meses=[...new Set(dados.map(p=>p.am))].sort();
+  const alcancePorMes=meses.map(m=>dados.filter(p=>p.am===m).reduce((s,p)=>s+p.alcance,0));
+  const engajPorMes=meses.map(m=>dados.filter(p=>p.am===m).reduce((s,p)=>s+p.engaj,0));
+  if(chartsSocial.mes)chartsSocial.mes.destroy();
+  chartsSocial.mes=new Chart(document.getElementById('ch-social-mes'),{type:'bar',
+    data:{labels:meses.map(nomeMes),datasets:[
+      {type:'bar',label:'Alcance',data:alcancePorMes,backgroundColor:'#4f46e599',borderColor:'#4f46e5',borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {type:'line',label:'Engajamento',data:engajPorMes,borderColor:'#ef4444',backgroundColor:'#ef4444',borderWidth:2.5,pointRadius:4,yAxisID:'y1',tension:.3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${Math.round(c.raw).toLocaleString('pt-BR')}`}}},
+      scales:{y:{position:'left',ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}},
+        y1:{position:'right',grid:{display:false}}}}});
+
+  // ---- Por tipo ----
+  const tipos=[...new Set(dados.map(p=>p.tipo))];
+  const alcanceMedioTipo=tipos.map(t=>{const arr=dados.filter(p=>p.tipo===t); return arr.reduce((s,p)=>s+p.alcance,0)/arr.length;});
+  const taxaMediaTipo=tipos.map(t=>{const arr=dados.filter(p=>p.tipo===t); const a=arr.reduce((s,p)=>s+p.alcance,0); const e=arr.reduce((s,p)=>s+p.engaj,0); return a>0?(e/a*100):0;});
+  if(chartsSocial.tipo)chartsSocial.tipo.destroy();
+  chartsSocial.tipo=new Chart(document.getElementById('ch-social-tipo'),{type:'bar',
+    data:{labels:tipos,datasets:[
+      {label:'Alcance médio',data:alcanceMedioTipo,backgroundColor:'#4f46e599',borderColor:'#4f46e5',borderWidth:1,borderRadius:4,yAxisID:'y'},
+      {label:'Taxa engajamento %',data:taxaMediaTipo,backgroundColor:'#22c55e99',borderColor:'#22c55e',borderWidth:1,borderRadius:4,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},
+      tooltip:{callbacks:{label:c=>c.dataset.label.includes('%')?` ${c.dataset.label}: ${c.raw.toFixed(1)}%`:` ${c.dataset.label}: ${Math.round(c.raw).toLocaleString('pt-BR')}`}}},
+      scales:{y:{position:'left',ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}},
+        y1:{position:'right',ticks:{callback:v=>v.toFixed(0)+'%'},grid:{display:false}}}}});
+
+  // ---- Por dia da semana ----
+  const DOW_ORDER=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const DOW_PT={'Monday':'Seg','Tuesday':'Ter','Wednesday':'Qua','Thursday':'Qui','Friday':'Sex','Saturday':'Sáb','Sunday':'Dom'};
+  const alcanceMedioDow=DOW_ORDER.map(d=>{const arr=dados.filter(p=>p.dow===d); return arr.length?arr.reduce((s,p)=>s+p.alcance,0)/arr.length:0;});
+  if(chartsSocial.dow)chartsSocial.dow.destroy();
+  chartsSocial.dow=new Chart(document.getElementById('ch-social-dow'),{type:'bar',
+    data:{labels:DOW_ORDER.map(d=>DOW_PT[d]),datasets:[{label:'Alcance médio',data:alcanceMedioDow,backgroundColor:CORES,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${Math.round(c.raw).toLocaleString('pt-BR')}`}}},
+      scales:{y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Top 10 por alcance ----
+  const top10=[...dados].sort((a,b)=>b.alcance-a.alcance).slice(0,10);
+  if(chartsSocial.top)chartsSocial.top.destroy();
+  chartsSocial.top=new Chart(document.getElementById('ch-social-top'),{type:'bar',
+    data:{labels:top10.map(p=>p.caption.slice(0,26)+(p.caption.length>26?'…':'')),
+      datasets:[{label:'Alcance',data:top10.map(p=>p.alcance),backgroundColor:'#4f46e599',borderColor:'#4f46e5',borderWidth:1,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>` ${Math.round(c.raw).toLocaleString('pt-BR')}`}}},
+      scales:{x:{ticks:{callback:v=>(v/1000).toFixed(0)+'k'},grid:{color:'#f0f0f0'}}}}});
+
+  // ---- Tabela ----
+  const tb=document.getElementById('tb-social'); tb.innerHTML='';
+  const sorted=[...dados].sort((a,b)=>b.alcance-a.alcance);
+  sorted.forEach(p=>{
+    const tr=document.createElement('tr');
+    const linkHtml=p.link?`<a href="${p.link}" target="_blank" rel="noopener" style="color:#4f46e5;font-size:.72rem">Abrir ↗</a>`:'—';
+    tr.innerHTML=`<td>${p.dt}</td>
+      <td><span class="pill sm" style="background:#f3f4f6;color:#374151">${p.tipo}</span></td>
+      <td style="font-size:.78rem;color:#555;max-width:320px;white-space:normal;overflow-wrap:break-word;word-break:break-word">${p.caption}</td>
+      <td class="tr">${Math.round(p.views).toLocaleString('pt-BR')}</td>
+      <td class="tr">${Math.round(p.alcance).toLocaleString('pt-BR')}</td>
+      <td class="tr">${Math.round(p.engaj).toLocaleString('pt-BR')}</td>
+      <td class="tr" style="color:${p.taxaEngaj>=3?'#22c55e':'#666'};font-weight:${p.taxaEngaj>=3?'700':'400'}">${p.taxaEngaj.toFixed(1)}%</td>
+      <td class="tr">${Math.round(p.cliques).toLocaleString('pt-BR')}</td>
+      <td>${linkHtml}</td>`;
     tb.appendChild(tr);
   });
 }
