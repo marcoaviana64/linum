@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Produtos — LINUM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f2f5;color:#222;font-size:14px}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:14px 20px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.05rem;font-weight:700}
+header .sub{font-size:.72rem;opacity:.6;margin-top:2px}
+.toolbar{background:white;border-bottom:1px solid #e0e0e0;padding:10px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1.5px solid #ddd;border-radius:7px;font-size:.87rem;outline:none}
+.toolbar input:focus{border-color:#4f46e5}
+.badge{padding:3px 10px;border-radius:20px;font-size:.74rem;font-weight:700;white-space:nowrap}
+.badge-total{background:#e0e7ff;color:#3730a3}
+.badge-changed{background:#fef3c7;color:#92400e;display:none}
+.badge-changed.on{display:inline-block}
+.btn{padding:8px 15px;border:none;border-radius:7px;font-size:.83rem;font-weight:700;cursor:pointer;transition:background .15s;white-space:nowrap}
+.btn-primary{background:#4f46e5;color:white}
+.btn-primary:hover{background:#3730a3}
+.btn-secondary{background:#f1f5f9;color:#475569;border:1.5px solid #e2e8f0}
+.btn-secondary:hover{background:#e2e8f0}
+.btn-reset{background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;display:none}
+.btn-reset:hover{background:#fee2e2}
+.table-wrap{overflow-x:auto;padding-bottom:60px}
+table{width:100%;border-collapse:collapse;background:white;font-size:.83rem}
+thead th{background:#1a1a2e;color:white;padding:9px 12px;text-align:left;font-size:.76rem;font-weight:600;letter-spacing:.3px;white-space:nowrap;position:sticky;top:55px;z-index:10}
+thead th.r{text-align:right}
+tbody tr{border-bottom:1px solid #f1f5f9}
+tbody tr:hover{background:#fafbff}
+tbody tr.changed{background:#fffbeb;border-left:3px solid #f59e0b}
+tbody tr.changed td:first-child{padding-left:9px}
+td{padding:7px 12px;vertical-align:middle}
+td.r{text-align:right;font-variant-numeric:tabular-nums}
+td.ga{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+td.ga.pos{color:#16a34a}
+td.ga.neg{color:#dc2626}
+td.ga.nd{color:#aaa}
+td.ed{cursor:pointer}
+td.ed:hover{background:#eff6ff;border-radius:3px}
+td.ed input{width:100%;padding:3px 6px;border:2px solid #4f46e5;border-radius:4px;font-size:.83rem;font-family:inherit;outline:none}
+td.ed.r input{text-align:right;font-variant-numeric:tabular-nums}
+.ref-tag{display:inline-block;background:#e0e7ff;color:#3730a3;padding:1px 7px;border-radius:10px;font-size:.73rem;font-weight:700;font-family:monospace}
+.ref-nd{background:#f1f5f9;color:#94a3b8}
+.vv-tag{display:inline-block;background:#f0fdf4;color:#166534;padding:1px 7px;border-radius:10px;font-size:.76rem;font-weight:700;border:1px solid #bbf7d0}
+.vv-nd{background:#f8fafc;color:#aaa;border-color:#e2e8f0}
+.mk{font-size:.77rem;color:#6366f1;font-weight:600}
+.mk-nd{color:#bbb}
+.nd{color:#bbb}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:white;border-radius:14px;padding:26px 26px 20px;max-width:500px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h2{font-size:1rem;font-weight:700;margin-bottom:8px;color:#1a1a2e}
+.modal p{font-size:.84rem;color:#555;line-height:1.55;margin-bottom:12px}
+.modal code{display:block;background:#f1f5f9;padding:10px 14px;border-radius:7px;font-size:.82rem;font-family:'Consolas',monospace;margin-bottom:12px;color:#1a1a2e}
+.modal .mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🧶 LINUM — Editor de Produtos</h1>
+    <div class="sub">Clique em qualquer célula para editar · Tab avança entre Custo/Markup/Preço · Exportar gera o script de atualização</div>
+  </div>
+</header>
+<div class="toolbar">
+  <input type="text" id="f-busca" placeholder="🔎  Filtrar por referência ou descrição...">
+  <span class="badge badge-total" id="ct-total"></span>
+  <span class="badge badge-changed" id="ct-chg"></span>
+  <button class="btn btn-reset" id="btn-reset" onclick="resetar()">↩ Desfazer tudo</button>
+  <button class="btn btn-primary" onclick="exportar()">⬇ Exportar para Dashboards</button>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th style="width:36px">#</th>
+    <th style="width:85px">Ref</th>
+    <th>Descrição</th>
+    <th class="r" style="width:115px">Custo (R$)</th>
+    <th class="r" style="width:90px">Markup</th>
+    <th class="r" style="width:130px">Preço Venda</th>
+    <th class="r" style="width:100px">GA (R$)</th>
+  </tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeMod()">
+  <div class="modal">
+    <h2>✅ Script exportado com sucesso</h2>
+    <p>O arquivo <strong>aplicar_precos_linum.py</strong> foi baixado para a pasta Downloads.<br>Para aplicar as alterações nos dois dashboards, execute no terminal:</p>
+    <code>python aplicar_precos_linum.py</code>
+    <p style="font-size:.77rem;color:#888">O script atualiza <em>vv</em> e <em>cu</em> no <strong>dashboard_gerencial.html</strong> e <em>vv</em> no <strong>consulta_estoque_vendedoras.html</strong>, cruzando por referência.</p>
+    <div class="mfooter"><button class="btn btn-secondary" onclick="closeMod()">Fechar</button></div>
+  </div>
+</div>
+<script>const DADOS = [{"ref": "A13", "descricao": "Bata", "custo": 218.43, "markup": 2.8339, "vv": 619.0}, {"ref": "A13abstrata", "descricao": "Bata", "custo": 264.66, "markup": 3.3591, "vv": 889.0}, {"ref": "A66", "descricao": "Bata Amal", "custo": 256.4, "markup": 3.1162, "vv": 799.0}, {"ref": "A70", "descricao": "Bata Capuz", "custo": 280.88, "markup": 3.0939, "vv": 869.0}, {"ref": "A50", "descricao": "Bata de Nervuras V", "custo": 255.93, "markup": 3.0438, "vv": 779.0}, {"ref": "A64", "descricao": "Bata Ela", "custo": 296.89, "markup": 2.9944, "vv": 889.0}, {"ref": "B27", "descricao": "Bata Ines", "custo": 260.53, "markup": 3.0669, "vv": 799.0}, {"ref": "A07", "descricao": "Bata manga 3/4", "custo": 194.77, "markup": 3.0754, "vv": 599.0}, {"ref": "C07", "descricao": "Bata manga 3/4", "custo": 102.14, "markup": 2.9273, "vv": 299.0}, {"ref": "A07", "descricao": "Bata manga 3/4 Bordada", "custo": 230.77, "markup": 3.1156, "vv": 719.0}, {"ref": "B60", "descricao": "Bata Nadia", "custo": 341.46, "markup": 3.1014, "vv": 1059.0}, {"ref": "B60 art", "descricao": "Bata Nadia art", "custo": 401.06, "markup": 3.2389, "vv": 1299.0}, {"ref": "A36", "descricao": "Bata New", "custo": 248.68, "markup": 3.0119, "vv": 749.0}, {"ref": "A43", "descricao": "Bata Patê", "custo": 255.6, "markup": 3.0086, "vv": 769.0}, {"ref": "B23", "descricao": "Bata Ponta", "custo": 262.14, "markup": 3.3913, "vv": 889.0}, {"ref": "B23", "descricao": "Bata Ponta", "custo": 291.14, "markup": 3.397, "vv": 989.0}, {"ref": "B23", "descricao": "Bata Ponta abstrata", "custo": 365.54, "markup": 3.0065, "vv": 1099.0}, {"ref": "B04", "descricao": "Bata PRAIA", "custo": 293.2, "markup": 3.0662, "vv": 899.0}, {"ref": "B04", "descricao": "Bata PRAIA art", "custo": 388.2, "markup": 3.3462, "vv": 1299.0}, {"ref": "B05", "descricao": "Bata Rachel", "custo": 233.0, "markup": 3.2146, "vv": 749.0}, {"ref": "A08", "descricao": "Bata Sem manga pence", "custo": 195.15, "markup": 2.9157, "vv": 569.0}, {"ref": "C08", "descricao": "Bata Sem manga pence", "custo": 102.5, "markup": 2.9171, "vv": 299.0}, {"ref": "B12", "descricao": "Bata Solar", "custo": 277.31, "markup": 3.0255, "vv": 839.0}, {"ref": "B39", "descricao": "Bata tia sue( U)", "custo": 301.26, "markup": 3.1501, "vv": 949.0}, {"ref": "A46", "descricao": "Bata U", "custo": 237.74, "markup": 3.1505, "vv": 749.0}, {"ref": "B26", "descricao": "Bata V Botões Felicidade", "custo": 275.53, "markup": 3.2265, "vv": 889.0}, {"ref": "A42", "descricao": "Bermuda de Sarja", "custo": 182.3, "markup": 3.2858, "vv": 599.0}, {"ref": "A30", "descricao": "Blazer", "custo": 342.4, "markup": 2.8, "vv": 958.72}, {"ref": "A??", "descricao": "Blazer Ipanema", "custo": 419.25, "markup": 3.4085, "vv": 1429.0}, {"ref": "A59", "descricao": "BLUSA  AMPLA", "custo": 175.46, "markup": 4.7248, "vv": 829.0}, {"ref": "A61", "descricao": "BLUSA  QUADRADA MARCELLE", "custo": 238.91, "markup": 3.1351, "vv": 749.0}, {"ref": "A01", "descricao": "Blusa Basica Cambraia de Linho", "custo": 204.4, "markup": 3.0284, "vv": 619.0}, {"ref": "C01", "descricao": "Blusa Basica Cambraia de Linho", "custo": 100.91, "markup": 2.8641, "vv": 289.0}, {"ref": "A22", "descricao": "Blusa Bata", "custo": 182.56, "markup": 2.5416, "vv": 464.0}, {"ref": "A12", "descricao": "BLUSA CHEMISE", "custo": 247.92, "markup": 3.2228, "vv": 799.0}, {"ref": "A12J", "descricao": "BLUSA CHEMISE Aquarela", "custo": 397.37, "markup": 3.5207, "vv": 1399.0}, {"ref": "A12", "descricao": "BLUSA CHEMISE ARTESANAL", "custo": 297.35, "markup": 3.696, "vv": 1099.0}, {"ref": "A12 Bordada", "descricao": "BLUSA CHEMISE BORDADA", "custo": 254.52, "markup": 3.1392, "vv": 799.0}, {"ref": "A12 Bordada", "descricao": "BLUSA CHEMISE BORDADA a mão", "custo": 329.52, "markup": 3.6386, "vv": 1199.0}, {"ref": "B19", "descricao": "Blusa Cris", "custo": 258.5, "markup": 3.1683, "vv": 819.0}, {"ref": "B19", "descricao": "Blusa Cris", "custo": 329.4, "markup": 3.0024, "vv": 989.0}, {"ref": "A31", "descricao": "Blusa de gola", "custo": 256.68, "markup": 3.0739, "vv": 789.0}, {"ref": "A40", "descricao": "Blusa de Malha", "custo": 161.16, "markup": 3.0964, "vv": 499.0}, {"ref": "A69", "descricao": "Blusa Gola Alta Botões", "custo": 283.86, "markup": 3.0613, "vv": 869.0}, {"ref": "B07", "descricao": "Blusa m/c v Ipanema", "custo": 232.72, "markup": 3.1326, "vv": 729.0}, {"ref": "B07 art", "descricao": "Blusa m/c v Ipanema Art", "custo": 292.72, "markup": 3.1737, "vv": 929.0}, {"ref": "B07", "descricao": "Blusa m/c v Ipanema bordado", "custo": 292.72, "markup": 4.0961, "vv": 1199.0}, {"ref": "B13", "descricao": "Blusa manga curta light", "custo": 233.82, "markup": 3.1178, "vv": 729.0}, {"ref": "A33", "descricao": "Blusa Marcia Souto", "custo": 207.8, "markup": 3.3638, "vv": 699.0}, {"ref": "B15", "descricao": "blusa Pate romantica", "custo": 307.51, "markup": 3.2162, "vv": 989.0}, {"ref": "B21", "descricao": "Blusa Souto Maior", "custo": 198.85, "markup": 3.0123, "vv": 599.0}, {"ref": "A34", "descricao": "Blusa Sun Flower", "custo": 188.3, "markup": 3.1811, "vv": 599.0}, {"ref": "B10", "descricao": "Blusa tardezinha", "custo": 242.74, "markup": 3.0032, "vv": 729.0}, {"ref": "A58", "descricao": "Calça Alfaiataria", "custo": 212.1, "markup": 3.1541, "vv": 669.0}, {"ref": "A58", "descricao": "Calça Alfaiataria", "custo": 281.44, "markup": 3.1943, "vv": 899.0}, {"ref": "A18", "descricao": "Calça Cadarço", "custo": 255.17, "markup": 3.2489, "vv": 829.0}, {"ref": "B29", "descricao": "calça ipanema", "custo": 278.74, "markup": 3.1893, "vv": 889.0}, {"ref": "B29", "descricao": "Calça Ipanema", "custo": 250.54, "markup": 3.5882, "vv": 899.0}, {"ref": "A48", "descricao": "Calça Marcelo", "custo": 275.9, "markup": 3.1497, "vv": 869.0}, {"ref": "A29", "descricao": "Calça Master", "custo": 272.94, "markup": 3.6601, "vv": 999.0}, {"ref": "A02", "descricao": "Calça Pantacourt linho", "custo": 263.1, "markup": 3.0369, "vv": 799.0}, {"ref": "C02", "descricao": "Calça Pantacourt linho", "custo": 119.03, "markup": 2.5121, "vv": 299.0}, {"ref": "A11", "descricao": "Calça Pantalona", "custo": null, "markup": null, "vv": 839.0}, {"ref": "A11", "descricao": "Calça Pantalona", "custo": 290.89, "markup": 3.7781, "vv": 1099.0}, {"ref": "A11 blend", "descricao": "Calça Pantalona", "custo": 212.52, "markup": 3.2891, "vv": 699.0}, {"ref": "A29", "descricao": "Calça Slim", "custo": 253.66, "markup": 3.9383, "vv": 999.0}, {"ref": "B18", "descricao": "Calça Transpasada", "custo": 329.38, "markup": 3.6402, "vv": 1199.0}, {"ref": "A49", "descricao": "Camisa Marcello masculina", "custo": 235.7, "markup": 3.0929, "vv": 729.0}, {"ref": "B35", "descricao": "Camisão Sobretudo", "custo": 320.94, "markup": 3.7359, "vv": 1199.0}, {"ref": "B35", "descricao": "Camisão Sobretudo artesanal", "custo": 417.94, "markup": 3.5866, "vv": 1499.0}, {"ref": "B38", "descricao": "Casaco oversize", "custo": 428.06, "markup": 3.2682, "vv": 1399.0}, {"ref": "A32", "descricao": "Casaqueto", "custo": 301.79, "markup": 3.0452, "vv": 919.0}, {"ref": "A52", "descricao": "Colete", "custo": 250.96, "markup": 3.0643, "vv": 769.0}, {"ref": "A63", "descricao": "Jaqueta", "custo": 315.75, "markup": 3.4806, "vv": 1099.0}, {"ref": "A63", "descricao": "Jaqueta abstrata", "custo": 409.75, "markup": 3.4143, "vv": 1399.0}, {"ref": "A63", "descricao": "Jaqueta art", "custo": 409.75, "markup": 3.1702, "vv": 1299.0}, {"ref": "A51", "descricao": "kimono curto", "custo": 273.87, "markup": 3.027, "vv": 829.0}, {"ref": "A06", "descricao": "Macacão Basico", "custo": 335.42, "markup": 3.8728, "vv": 1299.0}, {"ref": "C06", "descricao": "Macacão Basico", "custo": 183.15, "markup": 2.9975, "vv": 549.0}, {"ref": "A71", "descricao": "Macacão Novo", "custo": 438.92, "markup": 3.4152, "vv": 1499.0}, {"ref": "M04", "descricao": "malha listra algodão", "custo": 165.03, "markup": 3.4478, "vv": 569.0}, {"ref": "M06", "descricao": "malha listra algodão leve", "custo": 158.14, "markup": 3.1554, "vv": 499.0}, {"ref": "M05", "descricao": "malha viscose com algodão", "custo": 158.78, "markup": null, "vv": null}, {"ref": "A23", "descricao": "Maxi Bermuda", "custo": 269.41, "markup": 3.7081, "vv": 999.0}, {"ref": "A54", "descricao": "MAXI CAMISA", "custo": 342.0, "markup": 4.2076, "vv": 1439.0}, {"ref": "A62", "descricao": "MAXI CAMISA", "custo": 339.4, "markup": 3.0907, "vv": 1049.0}, {"ref": "A62 ARTESANAL", "descricao": "MAXI CAMISA ARTESANAL", "custo": 350.4, "markup": 2.851, "vv": 999.0}, {"ref": "B37", "descricao": "Pantalona Oscar", "custo": 328.96, "markup": 3.6448, "vv": 1199.0}, {"ref": "B14", "descricao": "PARKA IPANEMA", "custo": 322.76, "markup": 3.405, "vv": 1099.0}, {"ref": "A41", "descricao": "Regata Marcia", "custo": 219.73, "markup": 3.0902, "vv": 679.0}, {"ref": "A37", "descricao": "Regata Sun Flower", "custo": 204.85, "markup": 3.0217, "vv": 619.0}, {"ref": "B03", "descricao": "Regata VALERY", "custo": 222.94, "markup": 3.0905, "vv": 689.0}, {"ref": "B02", "descricao": "Regata Verão", "custo": 208.44, "markup": 3.2095, "vv": 669.0}, {"ref": "A35", "descricao": "Saia", "custo": 271.37, "markup": 3.2023, "vv": 869.0}, {"ref": "B45", "descricao": "Saia  basica", "custo": 325.56, "markup": 3.3757, "vv": 1099.0}, {"ref": "A65", "descricao": "SAIA  ELA", "custo": 295.33, "markup": 3.044, "vv": 899.0}, {"ref": "B01", "descricao": "SAIA  VALERY ENVELOPE", "custo": 309.63, "markup": 3.0003, "vv": 929.0}, {"ref": "B17", "descricao": "SAIA CADARCO", "custo": 358.38, "markup": 3.0666, "vv": 1099.0}, {"ref": "A20", "descricao": "Short", "custo": 217.61, "markup": 3.0743, "vv": 669.0}, {"ref": "B24", "descricao": "Short Vies", "custo": 230.71, "markup": 3.2898, "vv": 759.0}, {"ref": "A19", "descricao": "Sobretudo", "custo": 297.42, "markup": 3.0227, "vv": 899.0}, {"ref": "A53", "descricao": "Trench Coat", "custo": 382.25, "markup": 3.1367, "vv": 1199.0}, {"ref": "B41", "descricao": "Vestido", "custo": 397.51, "markup": 3.6703, "vv": 1459.0}, {"ref": "B59", "descricao": "Vestido", "custo": 455.16, "markup": 3.2055, "vv": 1459.0}, {"ref": "A47", "descricao": "Vestido Amanda V", "custo": 345.64, "markup": 3.4689, "vv": 1199.0}, {"ref": "A05", "descricao": "VESTIDO BALLON", "custo": 297.11, "markup": 3.3287, "vv": 989.0}, {"ref": "C05", "descricao": "VESTIDO BALLON", "custo": 171.65, "markup": 3.2, "vv": 549.0}, {"ref": "C05", "descricao": "VESTIDO BALLON", "custo": 148.0, "markup": 3.2, "vv": 549.0}, {"ref": "B16", "descricao": "Vestido Bicolor", "custo": 370.56, "markup": 3.5055, "vv": 1299.0}, {"ref": "B41", "descricao": "Vestido CANOA", "custo": 397.51, "markup": 3.6703, "vv": 1459.0}, {"ref": "A27", "descricao": "Vestido Chemise", "custo": 393.35, "markup": 3.3024, "vv": 1299.0}, {"ref": "A27 Artesanal", "descricao": "Vestido Chemise", "custo": 462.35, "markup": 3.6747, "vv": 1699.0}, {"ref": "B11", "descricao": "Vestido Chemise charme", "custo": 439.1, "markup": 3.4138, "vv": 1499.0}, {"ref": "A?", "descricao": "Vestido Chemise M/C", "custo": 335.2, "markup": 3.577, "vv": 1199.0}, {"ref": "B20", "descricao": "Vestido Chemisier Light", "custo": 368.63, "markup": 3.5238, "vv": 1299.0}, {"ref": "B20", "descricao": "Vestido Chemisier Light", "custo": 451.63, "markup": 3.4962, "vv": 1579.0}, {"ref": "B20 coqueiro", "descricao": "Vestido Chemisier pintura aquarela", "custo": 483.63, "markup": 3.8231, "vv": 1849.0}, {"ref": "A25", "descricao": "Vestido decote V", "custo": 455.73, "markup": 3.5086, "vv": 1599.0}, {"ref": "A25", "descricao": "Vestido decote V", "custo": 397.73, "markup": 3.5174, "vv": 1399.0}, {"ref": "C06", "descricao": "VESTIDO ENVIESADO", "custo": 189.45, "markup": 2.9982, "vv": 568.0}, {"ref": "C06", "descricao": "VESTIDO ENVIESADO", "custo": 149.0, "markup": 3.8121, "vv": 568.0}, {"ref": "A24", "descricao": "Vestido Fashion", "custo": 418.04, "markup": 3.3226, "vv": 1389.0}, {"ref": "A24", "descricao": "Vestido Fashion art", "custo": 438.7, "markup": 3.4169, "vv": 1499.0}, {"ref": "A28", "descricao": "Vestido Gola Linho", "custo": 271.68, "markup": 3.6035, "vv": 979.0}, {"ref": "B34", "descricao": "Vestido Inez", "custo": 367.86, "markup": 3.8031, "vv": 1399.0}, {"ref": "A38", "descricao": "Vestido Isabela", "custo": 415.01, "markup": 3.371, "vv": 1399.0}, {"ref": "B30", "descricao": "Vestido KAFTAN", "custo": 359.94, "markup": 3.8867, "vv": 1399.0}, {"ref": "A03", "descricao": "VESTIDO M/CURTA", "custo": 336.0, "markup": 3.2, "vv": 999.0}, {"ref": "C03", "descricao": "VESTIDO M/CURTA", "custo": 170.65, "markup": 3.0999, "vv": 529.0}, {"ref": "C03", "descricao": "VESTIDO M/CURTA", "custo": 147.0, "markup": 3.5986, "vv": 529.0}, {"ref": "A04", "descricao": "VESTIDO MARIANNA", "custo": 368.3, "markup": 3.6628, "vv": 1349.0}, {"ref": "A69", "descricao": "Vestido NERVURA LAURA ALVIN", "custo": 359.82, "markup": 4.166, "vv": 1499.0}, {"ref": "B33", "descricao": "Vestido Oversize", "custo": 459.71, "markup": 3.2608, "vv": 1499.0}, {"ref": "B36", "descricao": "Vestido Oversize Cotts", "custo": 457.11, "markup": 3.1918, "vv": 1459.0}, {"ref": "A56", "descricao": "Vestido Rachel", "custo": 422.18, "markup": 3.2664, "vv": 1379.0}, {"ref": "A57", "descricao": "Vestido Rachel", "custo": 387.24, "markup": 3.5611, "vv": 1379.0}, {"ref": "B08", "descricao": "Vestido recortes", "custo": 366.58, "markup": 3.8163, "vv": 1399.0}, {"ref": "B08", "descricao": "Vestido recortes longo", "custo": 394.23, "markup": 3.8023, "vv": 1499.0}, {"ref": "A45", "descricao": "Vestido Regata", "custo": 341.55, "markup": 3.5105, "vv": 1199.0}, {"ref": "A68", "descricao": "Vestido REGATA GOLA PRAÇA", "custo": 355.82, "markup": 3.9318, "vv": 1399.0}, {"ref": "B06", "descricao": "Vestido REGATA IPANEMA", "custo": 356.93, "markup": 3.9196, "vv": 1399.0}, {"ref": "B31", "descricao": "Vestido Regata sumer 25", "custo": 315.54, "markup": 3.4829, "vv": 1099.0}, {"ref": "B09", "descricao": "Vestido SOLAR", "custo": 364.58, "markup": 3.8373, "vv": 1399.0}, {"ref": "A39", "descricao": "Vestido T-Shirt", "custo": 292.73, "markup": 3.037, "vv": 889.0}, {"ref": "A44", "descricao": "Vestido YVES", "custo": 381.37, "markup": 3.4061, "vv": 1299.0}];
+const PY_B64 = 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIC0qLSBjb2Rpbmc6IHV0Zi04IC0qLQojIFNjcmlwdCBnZXJhZG8gcGVsbyBFZGl0b3IgZGUgUHJvZHV0b3MgTElOVU0KIyBFeGVjdXRlOiBweXRob24gYXBsaWNhcl9wcmVjb3NfbGludW0ucHkKaW1wb3J0IHJlLCBqc29uLCBzeXMsIG9zCgpQUkVDT1MgPSBfX1BSRUNPU19EQVRBX18KCkdFUkVOQ0lBTCAgPSByJ0M6XFVzZXJzXG1hcmNvLnZpYW5hXE9uZURyaXZlXERvY3VtZW50c1xDbGF1ZGVcUHJvamVjdHNcRm9ybXVsYXJpb3NcZGFzaGJvYXJkX2xpbnVtXGRhc2hib2FyZF9nZXJlbmNpYWwuaHRtbCcKVkVOREVET1JBUyA9IHInQzpcVXNlcnNcbWFyY28udmlhbmFcT25lRHJpdmVcRG9jdW1lbnRzXENsYXVkZVxQcm9qZWN0c1xGb3JtdWxhcmlvc1xkYXNoYm9hcmRfbGludW1cY29uc3VsdGFfZXN0b3F1ZV92ZW5kZWRvcmFzLmh0bWwnCgpkZWYgcGFyc2VfcmF3KHBhdGgpOgogICAgd2l0aCBvcGVuKHBhdGgsICdyJywgZW5jb2Rpbmc9J3V0Zi04JykgYXMgZjoKICAgICAgICBodG1sID0gZi5yZWFkKCkKICAgIG0gPSByZS5zZWFyY2gocicoY29uc3QgRVNUT1FVRV9SQVc9KShcWy4qP1xdKTsnLCBodG1sLCByZS5ET1RBTEwpCiAgICBpZiBub3QgbToKICAgICAgICBzeXMuZXhpdChmJ0VTVE9RVUVfUkFXIG5hbyBlbmNvbnRyYWRvIGVtIHtwYXRofScpCiAgICByYXcgPSBtLmdyb3VwKDIpCiAgICByYXdfZml4ZWQgPSByZS5zdWIocicsKFxzKlxdKScsIHInXDEnLCByYXcpCiAgICByZXR1cm4gaHRtbCwgbSwganNvbi5sb2FkcyhyYXdfZml4ZWQpCgpkZWYgYnVpbGRfcHJlY29fbWFwKCk6CiAgICBwbSA9IHt9CiAgICBmb3IgcCBpbiBQUkVDT1M6CiAgICAgICAgcmVmID0gKHAuZ2V0KCdyZWYnKSBvciAnJykuc3RyaXAoKQogICAgICAgIGlmIHJlZjoKICAgICAgICAgICAgcG1bcmVmXSA9IHsndnYnOiBwLmdldCgndnYnKSwgJ2N1c3RvJzogcC5nZXQoJ2N1c3RvJyl9CiAgICByZXR1cm4gcG0KCmRlZiBhdHVhbGl6YXJfZ2VyZW5jaWFsKHBtKToKICAgIGh0bWwsIG0sIGRhdGEgPSBwYXJzZV9yYXcoR0VSRU5DSUFMKQogICAgdXBkID0gMAogICAgZm9yIHJvdyBpbiBkYXRhOgogICAgICAgIHJlZiA9IHN0cihyb3dbMF0pLnN0cmlwKCkgaWYgcm93WzBdIGVsc2UgJycKICAgICAgICBpZiByZWYgaW4gcG06CiAgICAgICAgICAgIHAgPSBwbVtyZWZdCiAgICAgICAgICAgIGlmIHBbJ3Z2J10gaXMgbm90IE5vbmU6IHJvd1s1XSA9IHBbJ3Z2J10KICAgICAgICAgICAgaWYgcFsnY3VzdG8nXSBpcyBub3QgTm9uZTogcm93WzZdID0gcFsnY3VzdG8nXQogICAgICAgICAgICB1cGQgKz0gMQogICAgbmV3X3JhdyA9IGpzb24uZHVtcHMoZGF0YSwgZW5zdXJlX2FzY2lpPUZhbHNlLCBzZXBhcmF0b3JzPSgnLCcsICc6JykpCiAgICBuZXdfcmF3ID0gbmV3X3Jhd1s6LTFdICsgJyxdJwogICAgbmV3X2h0bWwgPSBodG1sWzptLnN0YXJ0KDIpXSArIG5ld19yYXcgKyAnOycgICsgaHRtbFttLmVuZCgyKSsxOl0KICAgIHdpdGggb3BlbihHRVJFTkNJQUwsICd3JywgZW5jb2Rpbmc9J3V0Zi04JykgYXMgZjoKICAgICAgICBmLndyaXRlKG5ld19odG1sKQogICAgcHJpbnQoZicgIEdlcmVuY2lhbDogIHt1cGR9IHByb2R1dG8ocykgY29tIHJlZmVyZW5jaWEgYXR1YWxpemFkYScpCgpkZWYgYXR1YWxpemFyX3ZlbmRlZG9yYXMocG0pOgogICAgaHRtbCwgbSwgZGF0YSA9IHBhcnNlX3JhdyhWRU5ERURPUkFTKQogICAgdXBkID0gMAogICAgZm9yIHJvdyBpbiBkYXRhOgogICAgICAgIHJlZiA9IHN0cihyb3dbMF0pLnN0cmlwKCkgaWYgcm93WzBdIGVsc2UgJycKICAgICAgICBpZiByZWYgaW4gcG06CiAgICAgICAgICAgIHAgPSBwbVtyZWZdCiAgICAgICAgICAgIGlmIHBbJ3Z2J10gaXMgbm90IE5vbmU6IHJvd1s0XSA9IHBbJ3Z2J10KICAgICAgICAgICAgdXBkICs9IDEKICAgIG5ld19yYXcgPSBqc29uLmR1bXBzKGRhdGEsIGVuc3VyZV9hc2NpaT1GYWxzZSwgc2VwYXJhdG9ycz0oJywnLCAnOicpKQogICAgbmV3X3JhdyA9IG5ld19yYXdbOi0xXSArICcsXScKICAgIG5ld19odG1sID0gaHRtbFs6bS5zdGFydCgyKV0gKyBuZXdfcmF3ICsgJzsnICArIGh0bWxbbS5lbmQoMikrMTpdCiAgICB3aXRoIG9wZW4oVkVOREVET1JBUywgJ3cnLCBlbmNvZGluZz0ndXRmLTgnKSBhcyBmOgogICAgICAgIGYud3JpdGUobmV3X2h0bWwpCiAgICBwcmludChmJyAgVmVuZGVkb3Jhczoge3VwZH0gcHJvZHV0byhzKSBjb20gcmVmZXJlbmNpYSBhdHVhbGl6YWRhJykKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBwbSA9IGJ1aWxkX3ByZWNvX21hcCgpCiAgICBwcmludChmJ1ByZWNvcyBjYXJyZWdhZG9zOiB7bGVuKHBtKX0gcmVmZXJlbmNpYXMgdW5pY2FzJykKICAgIHByaW50KCdBdHVhbGl6YW5kbyBkYXNoYm9hcmRzLi4uJykKICAgIGF0dWFsaXphcl9nZXJlbmNpYWwocG0pCiAgICBhdHVhbGl6YXJfdmVuZGVkb3JhcyhwbSkKICAgIHByaW50KCdDb25jbHVpZG8hIFJlYWJyYSBvcyBkYXNoYm9hcmRzIG5vIG5hdmVnYWRvci4nKQo=';
+
+let P = JSON.parse(JSON.stringify(DADOS));
+let changed = new Set();
+let filtro = '';
+
+const fmtBR=(v,d=2)=>v==null?'':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const gaCalc=(c,v)=>c!=null&&v!=null?Math.round((v-c)*100)/100:null;
+const mkCalc=(c,v)=>c&&v?Math.round(v/c*10000)/10000:null;
+const vvFromMk=(c,mk)=>c&&mk?Math.round(c*mk*100)/100:null;
+
+function filtrados(){
+  if(!filtro)return P.map((_,i)=>i);
+  const q=filtro.toLowerCase();
+  return P.map((_,i)=>i).filter(i=>((P[i].ref||'')+' '+P[i].descricao).toLowerCase().includes(q));
+}
+
+function stats(){
+  const n=filtrados().length;
+  document.getElementById('ct-total').textContent=n+' produto'+(n!==1?'s':'');
+  const c=changed.size;
+  const el=document.getElementById('ct-chg');
+  const rb=document.getElementById('btn-reset');
+  if(c){el.textContent=c+' modificado'+(c!==1?'s':'');el.classList.add('on');rb.style.display='';}
+  else{el.classList.remove('on');rb.style.display='none';}
+}
+
+function render(){
+  stats();
+  const tb=document.getElementById('tbody');
+  tb.innerHTML='';
+  filtrados().forEach((idx,n)=>{
+    const p=P[idx];
+    const gv=gaCalc(p.custo,p.vv);
+    const gc=gv==null?'nd':gv>0?'pos':'neg';
+    const tr=document.createElement('tr');
+    if(changed.has(idx))tr.classList.add('changed');
+    tr.dataset.idx=idx;
+    tr.innerHTML=
+      '<td style="color:#ccc;font-size:.72rem">'+(n+1)+'</td>'+
+      '<td class="ed" data-f="ref" data-idx="'+idx+'"><span class="ref-tag'+(p.ref?'':' ref-nd')+'">'+(p.ref||'&mdash;')+'</span></td>'+
+      '<td class="ed" data-f="descricao" data-idx="'+idx+'">'+esc(p.descricao)+'</td>'+
+      '<td class="ed r" data-f="custo" data-idx="'+idx+'">'+(p.custo!=null?'R$\u00a0'+fmtBR(p.custo):'<span class="nd">&mdash;</span>')+'</td>'+
+      '<td class="ed r" data-f="markup" data-idx="'+idx+'"><span class="mk'+(p.markup==null?' mk-nd':'')+'">'+
+        (p.markup!=null?fmtBR(p.markup,4)+'&times;':'&mdash;')+'</span></td>'+
+      '<td class="ed r" data-f="vv" data-idx="'+idx+'"><span class="vv-tag'+(p.vv!=null?'':' vv-nd')+'">'+
+        (p.vv!=null?'R$\u00a0'+fmtBR(p.vv):'&mdash;')+'</span></td>'+
+      '<td class="ga '+gc+'">'+(gv!=null?'R$\u00a0'+fmtBR(gv):'&mdash;')+'</td>';
+    tb.appendChild(tr);
+  });
+}
+
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function checkChanged(idx){
+  const p=P[idx],o=DADOS[idx];
+  const diff=['ref','descricao','custo','markup','vv'].some(f=>{
+    const a=p[f],b=o[f];
+    if(a==null&&b==null)return false;
+    if(typeof a==='number'&&typeof b==='number')return Math.abs(a-b)>0.001;
+    return a!==b;
+  });
+  if(diff)changed.add(idx);else changed.delete(idx);
+}
+
+document.getElementById('tbody').addEventListener('click',function(e){
+  const td=e.target.closest('td.ed');
+  if(!td||td.querySelector('input'))return;
+  const idx=+td.dataset.idx;
+  const f=td.dataset.f;
+  const p=P[idx];
+  const isNum=f==='custo'||f==='markup'||f==='vv';
+  const inp=document.createElement('input');
+  inp.type=isNum?'number':'text';
+  if(isNum){inp.step='0.01';inp.min='0';}
+  inp.value=p[f]!=null?p[f]:'';
+  td.innerHTML='';td.appendChild(inp);
+  inp.focus();inp.select();
+
+  function commit(){
+    const raw=inp.value.trim();
+    if(isNum){
+      const num=raw===''?null:parseFloat(raw);
+      p[f]=num;
+      if(f==='custo'||f==='vv'){if(p.custo!=null&&p.vv!=null)p.markup=mkCalc(p.custo,p.vv);}
+      else if(f==='markup'){if(p.custo!=null&&p.markup!=null){p.vv=vvFromMk(p.custo,p.markup);if(p.vv!=null)p.markup=mkCalc(p.custo,p.vv);}}
+    }else{p[f]=raw;}
+    checkChanged(idx);render();
+  }
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){inp.value=p[f]!=null?p[f]:'';inp.blur();}
+    if(e.key==='Tab'){
+      e.preventDefault();inp.blur();
+      const nf=['custo','markup','vv'];
+      const ci=nf.indexOf(f);
+      if(ci>=0&&ci<nf.length-1){const nx=td.parentElement.querySelector('[data-f="'+nf[ci+1]+'"]');if(nx)nx.click();}
+    }
+  });
+});
+
+document.getElementById('f-busca').addEventListener('input',function(){filtro=this.value.trim();render();});
+
+function resetar(){
+  if(!confirm('Desfazer todas as '+changed.size+' alteração(ões)?'))return;
+  P=JSON.parse(JSON.stringify(DADOS));changed.clear();render();
+}
+
+function exportar(){
+  const ts=new Date().toLocaleString('pt-BR');
+  const dataJson=JSON.stringify(P,null,2);
+  const raw=atob(PY_B64);
+  const bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  const pyStr=new TextDecoder('utf-8').decode(bytes);
+  const py=pyStr
+    .replace('__PRECOS_DATA__',dataJson)
+    .replace('Script gerado pelo Editor de Produtos LINUM','Script gerado em '+ts);
+  const blob=new Blob([py],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='aplicar_precos_linum.py';a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('modal-bg').classList.add('on');
+}
+
+function closeMod(){document.getElementById('modal-bg').classList.remove('on');}
+
+render();
+</script>
+</body>
+</html>
